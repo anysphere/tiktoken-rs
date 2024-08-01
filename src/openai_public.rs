@@ -29,7 +29,7 @@ impl EncodingFactory {
   // The pattern in the original GPT-2 release is:
   // r"'s|'t|'re|'ve|'m|'ll|'d| ?[\p{L}]+| ?[\p{N}]+| ?[^\s\p{L}\p{N}]+|\s+(?!\S)|\s+"""
   // This is equivalent, but executes faster:
-  const LEGACY_SPLITTER_REGEX: &str = r"'(?:[sdmt]|ll|ve|re)| ?\p{L}++| ?\p{N}++| ?[^\s\p{L}\p{N}]++|\s++$|\s+(?!\S)|\s";
+  const LEGACY_SPLITTER_REGEX: &str = r"'(?:[sdmt]|ll|ve|re)| ?\p{L}+| ?\p{N}+| ?[^\s\p{L}\p{N}]+";
 
   pub fn gpt2() -> Result<Encoding, EncodingFactoryError> {
     // todo!
@@ -114,7 +114,7 @@ impl EncodingFactory {
     special_tokens.shrink_to_fit();
     // use faster version from tiktoken upstream https://github.com/openai/tiktoken/pull/258/files#r1487668172
     // const PATTERN: &str = r"(?i:'s|'t|'re|'ve|'m|'ll|'d)|[^\r\n\p{L}\p{N}]?\p{L}+|\p{N}{1,3}| ?[^\s\p{L}\p{N}]+[\r\n]*|\s*[\r\n]+|\s+(?!\S)|\s+";
-    const PATTERN: &str = r"'(?i:[sdmt]|ll|ve|re)|[^\r\n\p{L}\p{N}]?+\p{L}++|\p{N}{1,3}+| ?[^\s\p{L}\p{N}]++[\r\n]*+|\s++$|\s*[\r\n]|\s+(?!\S)|\s";
+    const PATTERN: &str = r"'(?i:[sdmt]|ll|ve|re)|[^\r\n\p{L}\p{N}]?\p{L}+|\p{N}{1,3}| ?[^\s\p{L}\p{N}]+[\r\n]*|\s*[\r\n]";
     Encoding::new(
             "cl100k_base",
             PATTERN,
@@ -142,8 +142,6 @@ impl EncodingFactory {
         r"\p{N}{1,3}",
         r" ?[^\s\p{L}\p{N}]+[\r\n/]*",
         r"\s*[\r\n]+",
-        r"\s+(?!\S)",
-        r"\s+",
     ].join("|");
 
     Encoding::new("o200k_base", pat_str, mergeable_ranks, special_tokens, None)
@@ -204,7 +202,7 @@ impl EncodingFactory {
       special_tokens.into_iter().enumerate().map(|(i, token)| (token, (num_base_tokens + i) as Rank)).collect();
     special_tokens_map.shrink_to_fit();
 
-    let pat_str = r"(?i:'s|'t|'re|'ve|'m|'ll|'d)|[^\r\n\p{L}\p{N}]?\p{L}+|\p{N}{1,3}| ?[^\s\p{L}\p{N}]+[\r\n]*|\s*[\r\n]+|\s+(?!\S)|\s+";
+    let pat_str = r"(?i:'s|'t|'re|'ve|'m|'ll|'d)|[^\r\n\p{L}\p{N}]?\p{L}+|\p{N}{1,3}| ?[^\s\p{L}\p{N}]+[\r\n]*|\s*[\r\n]+";
 
     let vocab_size = num_base_tokens + special_tokens_map.len();
     Encoding::new(
