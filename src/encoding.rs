@@ -492,8 +492,8 @@ impl Default for Encoding {
 // for the prefixes of all mergeable ranks.
 // Modulus * prime must be less than 2^63-1 to avoid overflow.
 const PRIME: i64 = 997;
-const PRIME_INVERSE: i64 = 381143430290873;
-const MODULUS: i64 = 1e15 as i64 + 1;
+const PRIME_INVERSE: i64 = 617853560682069;
+const MODULUS: i64 = 1e15 as i64 + 37;
 
 const _: () = assert!(PRIME > 256, "PRIME must be greater than 256 for byte-wise rolling hash");
 const _: () = assert!(PRIME < MODULUS, "PRIME must be less than MODULUS");
