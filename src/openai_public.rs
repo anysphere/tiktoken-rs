@@ -147,17 +147,12 @@ impl EncodingFactory {
       "bd5e66af07259851e88c3e483f88371dc2408cb0ce8b9787d29eaecdbb78eade",
     )
     .map_err(|_| EncodingFactoryError::FailedToLoadEncoding)?;
-    let special_tokens: HashMap<String, usize> = [].iter().cloned().collect();
+    let special_tokens: HashMap<String, usize> = [
+      ("<unk>".to_string(), 0),
+      ("<s>".to_string(), 1),
+      ("</s>".to_string(), 2),
+    ].iter().cloned().collect();
 
-    // let pat_str: &str = &[
-    //     r"[^\r\n\p{L}\p{N}]?[\p{Lu}\p{Lt}\p{Lm}\p{Lo}\p{M}]*[\p{Ll}\p{Lm}\p{Lo}\p{M}]+(?i:'s|'t|'re|'ve|'m|'ll|'d)?",
-    //     r"[^\r\n\p{L}\p{N}]?[\p{Lu}\p{Lt}\p{Lm}\p{Lo}\p{M}]+[\p{Ll}\p{Lm}\p{Lo}\p{M}]*(?i:'s|'t|'re|'ve|'m|'ll|'d)?",
-    //     r"\p{N}{1,3}",
-    //     r" ?[^\s\p{L}\p{N}]+[\r\n/]*",
-    //     r"\s*[\r\n]+",
-    //     r"\s+(?!\S)",
-    //     r"\s+",
-    // ].join("|");
     let pat_str = r"(?i:'s|'t|'re|'ve|'m|'ll|'d)|[^\r\n\p{L}\p{N}]?\p{L}+|\p{N}{1,3}| ?[^\s\p{L}\p{N}]+[\r\n]*|\s*[\r\n]+|\s+(?!\S)|\s+";
 
     Encoding::new("codestral", pat_str, mergeable_ranks, special_tokens, None)
