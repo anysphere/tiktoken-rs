@@ -22,6 +22,10 @@ const IM_START: &str = "<|im_start|>";
 const IM_END: &str = "<|im_end|>";
 const IM_SEP: &str = "<|im_sep|>";
 
+const CODESTRAL_UNK: &str = "<unk>";
+const CODESTRAL_S: &str = "<s>";
+const CODESTRAL_E: &str = "</s>";
+
 #[derive(Clone, Debug, Copy)]
 pub struct EncodingFactory {}
 impl EncodingFactory {
@@ -148,15 +152,15 @@ impl EncodingFactory {
     )
     .map_err(|_| EncodingFactoryError::FailedToLoadEncoding)?;
     let special_tokens: HashMap<String, usize> = [
-      ("<unk>".to_string(), 0),
-      ("<s>".to_string(), 1),
-      ("</s>".to_string(), 2),
+      (CODESTRAL_UNK.to_string(), 0),
+      (CODESTRAL_S.to_string(), 1),
+      (CODESTRAL_E.to_string(), 2),
     ].iter().cloned().collect();
 
     // let pat_str = r"(?i:'s|'t|'re|'ve|'m|'ll|'d)|[^\r\n\p{L}\p{N}]?\p{L}+|\p{N}{1,3}| ?[^\s\p{L}\p{N}]+[\r\n]*|\s*[\r\n]+|\s+(?!\S)|\s+";
-    let pat_str = r"▁?\S+|\s+";
+    // let pat_str = r"▁?\S+|\s+";
 
-    Encoding::new("codestral", pat_str, mergeable_ranks, special_tokens, None)
+    Encoding::new("codestral", "", mergeable_ranks, special_tokens, None)
       .map_err(|e| EncodingFactoryError::UnableToCreateEncoding(e.to_string()))
   }
 
@@ -190,7 +194,10 @@ mod tests {
 
     #[test]
     fn test_encoding_encode_decode() {
-        let encoding = EncodingFactory::cl100k_im().unwrap();
+        let encoding = match EncodingFactory::codestral() {
+            Ok(enc) => enc,
+            Err(e) => panic!("Failed to create Codestral encoding: {:?}", e),
+        };
         let text = "Hello, world!";
         let tokens = encoding.encode_ordinary(text);
         let decoded = encoding.decode(&tokens);
@@ -199,7 +206,10 @@ mod tests {
 
     #[test]
     fn test_encoding_special_tokens() {
-        let encoding = EncodingFactory::cl100k_im().unwrap();
+        let encoding = match EncodingFactory::codestral() {
+            Ok(enc) => enc,
+            Err(e) => panic!("Failed to create Codestral encoding: {:?}", e),
+        };
         let special_tokens = vec![
             "<|im_start|>",
             "<|im_end|>",
