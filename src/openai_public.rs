@@ -147,7 +147,7 @@ impl EncodingFactory {
       "bd5e66af07259851e88c3e483f88371dc2408cb0ce8b9787d29eaecdbb78eade",
     )
     .map_err(|_| EncodingFactoryError::FailedToLoadEncoding)?;
-    let special_tokens: HashMap<String, usize> = special_tokens.iter().cloned().collect();
+    let special_tokens: HashMap<String, usize> = [].iter().cloned().collect();
 
     // let pat_str: &str = &[
     //     r"[^\r\n\p{L}\p{N}]?[\p{Lu}\p{Lt}\p{Lm}\p{Lo}\p{M}]*[\p{Ll}\p{Lm}\p{Lo}\p{M}]+(?i:'s|'t|'re|'ve|'m|'ll|'d)?",
