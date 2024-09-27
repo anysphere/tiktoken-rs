@@ -141,6 +141,28 @@ impl EncodingFactory {
       .map_err(|e| EncodingFactoryError::UnableToCreateEncoding(e.to_string()))
   }
 
+  pub fn codestral() -> Result<Encoding, EncodingFactoryError> {
+    let mergeable_ranks = load_tiktoken_bpe(
+      include_bytes!("../data/codestral.tiktoken"),
+      "bd5e66af07259851e88c3e483f88371dc2408cb0ce8b9787d29eaecdbb78eade",
+    )
+    .map_err(|_| EncodingFactoryError::FailedToLoadEncoding)?;
+    let special_tokens: HashMap<String, usize> = special_tokens.iter().cloned().collect();
+
+    // let pat_str: &str = &[
+    //     r"[^\r\n\p{L}\p{N}]?[\p{Lu}\p{Lt}\p{Lm}\p{Lo}\p{M}]*[\p{Ll}\p{Lm}\p{Lo}\p{M}]+(?i:'s|'t|'re|'ve|'m|'ll|'d)?",
+    //     r"[^\r\n\p{L}\p{N}]?[\p{Lu}\p{Lt}\p{Lm}\p{Lo}\p{M}]+[\p{Ll}\p{Lm}\p{Lo}\p{M}]*(?i:'s|'t|'re|'ve|'m|'ll|'d)?",
+    //     r"\p{N}{1,3}",
+    //     r" ?[^\s\p{L}\p{N}]+[\r\n/]*",
+    //     r"\s*[\r\n]+",
+    //     r"\s+(?!\S)",
+    //     r"\s+",
+    // ].join("|");
+
+    Encoding::new("codestral", "", mergeable_ranks, special_tokens, None)
+      .map_err(|e| EncodingFactoryError::UnableToCreateEncoding(e.to_string()))
+  }
+
   pub fn o200k_base() -> Result<Encoding, EncodingFactoryError> {
     EncodingFactory::o200k_with_special_tokens(&[
       (ENDOFTEXT.to_string(), 199999),
