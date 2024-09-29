@@ -22,10 +22,6 @@ const IM_START: &str = "<|im_start|>";
 const IM_END: &str = "<|im_end|>";
 const IM_SEP: &str = "<|im_sep|>";
 
-const CODESTRAL_UNK: &str = "<unk>";
-const CODESTRAL_S: &str = "<s>";
-const CODESTRAL_E: &str = "</s>";
-
 #[derive(Clone, Debug, Copy)]
 pub struct EncodingFactory {}
 impl EncodingFactory {
@@ -157,15 +153,15 @@ impl EncodingFactory {
       .map_err(|e| EncodingFactoryError::UnableToCreateEncoding(e.to_string()))
   }
 
-  pub fn deepseek() -> Result<Encoding, EncodingFactoryError> {
+  pub fn deepseekv2() -> Result<Encoding, EncodingFactoryError> {
     let mergeable_ranks = load_tiktoken_bpe(
-      include_bytes!("../data/deepseek.tiktoken"),
+      include_bytes!("../data/deepseekv2.tiktoken"),
       "3516b4e6e24389f7d1b288d861ce063da13296f916d29384e56ea9e0f6ba6674",
     )
     .map_err(|_| EncodingFactoryError::FailedToLoadEncoding)?;
     let mut special_tokens: HashMap<String, usize> = [].iter().cloned().collect();
 
-    Encoding::new("deepseek", r"", mergeable_ranks, special_tokens, None)
+    Encoding::new("deepseekv2", r"", mergeable_ranks, special_tokens, None)
       .map_err(|e| EncodingFactoryError::UnableToCreateEncoding(e.to_string()))
   }
 
