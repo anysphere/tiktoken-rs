@@ -151,16 +151,21 @@ impl EncodingFactory {
       "bd5e66af07259851e88c3e483f88371dc2408cb0ce8b9787d29eaecdbb78eade",
     )
     .map_err(|_| EncodingFactoryError::FailedToLoadEncoding)?;
-    let special_tokens: HashMap<String, usize> = [
-      (CODESTRAL_UNK.to_string(), 0),
-      (CODESTRAL_S.to_string(), 1),
-      (CODESTRAL_E.to_string(), 2),
-    ].iter().cloned().collect();
+    let special_tokens: HashMap<String, usize> = [].iter().cloned().collect();
 
-    // let pat_str = r"(?i:'s|'t|'re|'ve|'m|'ll|'d)|[^\r\n\p{L}\p{N}]?\p{L}+|\p{N}{1,3}| ?[^\s\p{L}\p{N}]+[\r\n]*|\s*[\r\n]+|\s+(?!\S)|\s+";
-    // let pat_str = r"▁?\S+|\s+";
+    Encoding::new("codestral", r"", mergeable_ranks, special_tokens, None)
+      .map_err(|e| EncodingFactoryError::UnableToCreateEncoding(e.to_string()))
+  }
 
-    Encoding::new("codestral", "", mergeable_ranks, special_tokens, None)
+  pub fn deepseek() -> Result<Encoding, EncodingFactoryError> {
+    let mergeable_ranks = load_tiktoken_bpe(
+      include_bytes!("../data/deepseek.tiktoken"),
+      "3516b4e6e24389f7d1b288d861ce063da13296f916d29384e56ea9e0f6ba6674",
+    )
+    .map_err(|_| EncodingFactoryError::FailedToLoadEncoding)?;
+    let mut special_tokens: HashMap<String, usize> = [].iter().cloned().collect();
+
+    Encoding::new("deepseek", r"", mergeable_ranks, special_tokens, None)
       .map_err(|e| EncodingFactoryError::UnableToCreateEncoding(e.to_string()))
   }
 
@@ -190,37 +195,26 @@ impl EncodingFactory {
 
 #[cfg(test)]
 mod tests {
-    use super::*;
+  use super::*;
 
-    #[test]
-    fn test_encoding_encode_decode() {
-        let encoding = match EncodingFactory::codestral() {
-            Ok(enc) => enc,
-            Err(e) => panic!("Failed to create Codestral encoding: {:?}", e),
-        };
-        let text = "Hello, world!";
-        let tokens = encoding.encode_ordinary(text);
-        let decoded = encoding.decode(&tokens);
-        assert_eq!(text, decoded);
+  #[test]
+  fn test_encoding_encode_decode() {
+    let encoding = EncodingFactory::cl100k_im().unwrap();
+    let text = "Hello, world!";
+    let tokens = encoding.encode_ordinary(text);
+    let decoded = encoding.decode(&tokens);
+    assert_eq!(text, decoded);
+  }
+
+  #[test]
+  fn test_encoding_special_tokens() {
+    let encoding = EncodingFactory::cl100k_im().unwrap();
+    let special_tokens = vec!["<|im_start|>", "<|im_end|>", "<|im_sep|>", "<|endofprompt|>"];
+
+    for token in special_tokens {
+      let encoded = encoding.encode_single_token(token).unwrap();
+      let decoded = encoding.decode_single_token_bytes(encoded).unwrap();
+      assert_eq!(token.as_bytes(), decoded.as_slice());
     }
-
-    #[test]
-    fn test_encoding_special_tokens() {
-        let encoding = match EncodingFactory::codestral() {
-            Ok(enc) => enc,
-            Err(e) => panic!("Failed to create Codestral encoding: {:?}", e),
-        };
-        let special_tokens = vec![
-            "<|im_start|>",
-            "<|im_end|>",
-            "<|im_sep|>",
-            "<|endofprompt|>",
-        ];
-
-        for token in special_tokens {
-            let encoded = encoding.encode_single_token(token).unwrap();
-            let decoded = encoding.decode_single_token_bytes(encoded).unwrap();
-            assert_eq!(token.as_bytes(), decoded.as_slice());
-        }
-    }
+  }
 }
