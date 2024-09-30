@@ -5,6 +5,7 @@ use rustc_hash::FxHashSet as HashSet;
 use std::sync::Arc;
 use thiserror::Error;
 use const_primes::is_prime;
+use std::borrow::Cow;
 
 /// A struct that represents an encoding scheme based on byte-pair encoding (BPE).
 #[derive(Debug)]
@@ -127,17 +128,19 @@ impl Encoding {
         self.core_bpe.encode_ordinary(text)
     }
 
-    pub fn estimate_num_tokens_no_special_tokens_fast(&self, text: &str, replace_spaces_with_lower_one_eighth_block: bool = false) -> usize {
-        if replace_spaces_with_lower_one_eighth_block {
-            text = text.replace(" ", "\u{2581}");
-        }
+    pub fn estimate_num_tokens_no_special_tokens_fast(&self, text: &str, replace_spaces_with_lower_one_eighth_block: bool) -> usize {
+        let preprocessed_text = if replace_spaces_with_lower_one_eighth_block {
+            Cow::Owned(text.replace(" ", "\u{2581}"))
+        } else {
+            Cow::Borrowed(text)
+        };
 
         let mut token_count = 0;
         let mut current_token = Vec::new();
         let mut current_token_hash: i64 = 0;
         let mut new_current_token = Vec::new();
 
-        for byte in text.bytes() {
+        for byte in preprocessed_text.bytes() {
             current_token.push(byte);
             current_token_hash = roll_hash(current_token_hash, byte);
 
