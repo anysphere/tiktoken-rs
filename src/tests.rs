@@ -205,7 +205,7 @@ fn estimation_is_close() {
       .unwrap()
       .len();
 
-    let estimated_count = enc.estimate_num_tokens_no_special_tokens_fast(file);
+    let estimated_count = enc.estimate_num_tokens_no_special_tokens_fast(file, false);
 
     println!("Real count: {}", real_count);
     println!("Estimated count: {}", estimated_count);
@@ -229,7 +229,7 @@ fn simple_estimation_is_close() {
       .unwrap()
       .len();
 
-    let estimated_count = enc.estimate_num_tokens_no_special_tokens_fast(&test);
+    let estimated_count = enc.estimate_num_tokens_no_special_tokens_fast(&test, false);
 
     println!("Real count: {}", real_count);
     println!("Estimated count: {}", estimated_count);
@@ -290,7 +290,7 @@ fn estimation_is_close_o200k() {
       .unwrap()
       .len();
 
-    let estimated_count = enc.estimate_num_tokens_no_special_tokens_fast(file);
+    let estimated_count = enc.estimate_num_tokens_no_special_tokens_fast(file, false);
 
     println!("Real count: {}", real_count);
     println!("Estimated count: {}", estimated_count);
@@ -314,7 +314,7 @@ fn simple_estimation_is_close_o200k() {
       .unwrap()
       .len();
 
-    let estimated_count = enc.estimate_num_tokens_no_special_tokens_fast(&test);
+    let estimated_count = enc.estimate_num_tokens_no_special_tokens_fast(&test, false);
 
     println!("Real count: {}", real_count);
     println!("Estimated count: {}", estimated_count);
