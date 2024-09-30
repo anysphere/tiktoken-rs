@@ -5,7 +5,6 @@ use rustc_hash::FxHashSet as HashSet;
 use std::sync::Arc;
 use thiserror::Error;
 use const_primes::is_prime;
-use std::borrow::Cow;
 
 /// A struct that represents an encoding scheme based on byte-pair encoding (BPE).
 #[derive(Debug)]
