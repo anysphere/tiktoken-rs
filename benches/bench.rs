@@ -9,6 +9,7 @@ fn cl100k_base_benchmark(c: &mut Criterion) {
         b.iter(|| {
             black_box(x.estimate_num_tokens_no_special_tokens_fast(
                 &t,
+                false
             ));
         });
     });
