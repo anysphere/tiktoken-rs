@@ -129,18 +129,22 @@ impl Encoding {
     }
 
     pub fn estimate_num_tokens_no_special_tokens_fast(&self, text: &str, replace_spaces_with_lower_one_eighth_block: bool) -> usize {
-        let preprocessed_text = if replace_spaces_with_lower_one_eighth_block {
-            Cow::Owned(text.replace(" ", "\u{2581}"))
+        let tokens = if replace_spaces_with_lower_one_eighth_block {
+            self.count_tokens(&text.replace(" ", "\u{2581}"))
         } else {
-            Cow::Borrowed(text)
+            self.count_tokens(text)
         };
 
+        tokens
+    }
+
+    fn count_tokens(&self, text: &str) -> usize {
         let mut token_count = 0;
         let mut current_token = Vec::new();
         let mut current_token_hash: i64 = 0;
         let mut new_current_token = Vec::new();
 
-        for byte in preprocessed_text.bytes() {
+        for byte in text.bytes() {
             current_token.push(byte);
             current_token_hash = roll_hash(current_token_hash, byte);
 
