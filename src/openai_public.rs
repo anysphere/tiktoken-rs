@@ -159,7 +159,7 @@ impl EncodingFactory {
       "3516b4e6e24389f7d1b288d861ce063da13296f916d29384e56ea9e0f6ba6674",
     )
     .map_err(|_| EncodingFactoryError::FailedToLoadEncoding)?;
-    let mut special_tokens: HashMap<String, usize> = [].iter().cloned().collect();
+    let special_tokens: HashMap<String, usize> = [].iter().cloned().collect();
 
     Encoding::new("deepseekv2", r"", mergeable_ranks, special_tokens, None)
       .map_err(|e| EncodingFactoryError::UnableToCreateEncoding(e.to_string()))
