@@ -168,7 +168,7 @@ impl EncodingFactory {
   pub fn llama3() -> Result<Encoding, EncodingFactoryError> {
     let mergeable_ranks = load_tiktoken_bpe(
       include_bytes!("../data/llama3.tiktoken"),
-      "3516b4e6e24389f7d1b288d861ce063da13296f916d29384e56ea9e0f6ba6674",
+      "82e9d31979e92ab929cd544440f129d9ecd797b69e327f80f17e1c50d5551b55",
     )
     .map_err(|_| EncodingFactoryError::FailedToLoadEncoding)?;
 
