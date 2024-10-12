@@ -185,6 +185,85 @@ fn test_simple() {
       .len(),
     6807
   );
+
+  let enc_llama = EncodingFactory::llama3().unwrap();
+  for token in 0..10000 {
+    assert_eq!(
+      enc_llama.encode_single_token_bytes(&enc_llama.decode_single_token_bytes(token).unwrap()).unwrap(),
+      token
+    );
+  }
+
+  assert_eq!(
+    enc_llama
+      .encode(
+        "hello world",
+        &SpecialTokenHandling { default: SpecialTokenAction::Forbidden, ..Default::default() }
+      )
+      .unwrap(),
+    vec![15339, 1917]
+  );
+  assert_eq!(enc_llama.decode(&[15339, 1917]), "hello world");
+  assert_eq!(
+    enc_llama
+      .encode(
+        "hello <|end_of_text|>",
+        &SpecialTokenHandling { default: SpecialTokenAction::Special, ..Default::default() }
+      )
+      .unwrap(),
+    vec![15339, 220, 128001]
+  );
+  assert_eq!(
+    enc_llama
+      .encode(
+        "hello <|end_of_text|>",
+        &SpecialTokenHandling {
+          default: SpecialTokenAction::Forbidden,
+          overrides: vec![("<|end_of_text|>".to_string(), SpecialTokenAction::Special)],
+        }
+      )
+      .unwrap(),
+    vec![15339, 220, 128001]
+  );
+  assert_eq!(
+    enc_llama
+      .encode(
+        "hello <|end_of_text|>",
+        &SpecialTokenHandling { default: SpecialTokenAction::NormalText, ..Default::default() }
+      )
+      .unwrap(),
+    vec![15339, 83739, 408, 3659, 4424, 91, 29]
+  );
+  assert_eq!(
+    enc_llama
+      .encode(
+        include_str!("test.txt"),
+        &SpecialTokenHandling { default: SpecialTokenAction::NormalText, ..Default::default() }
+      )
+      .unwrap()
+      .len(),
+    7182
+  );
+  assert_eq!(
+    enc_llama
+      .encode(
+        include_str!("apostrophe.txt"),
+        &SpecialTokenHandling { default: SpecialTokenAction::NormalText, ..Default::default() }
+      )
+      .unwrap()
+      .len(),
+    408
+  );
+  assert_eq!(
+    enc_llama
+      .encode(
+        include_str!("prompt.txt"),
+        &SpecialTokenHandling { default: SpecialTokenAction::NormalText, ..Default::default() }
+      )
+      .unwrap()
+      .len(),
+    6562
+  );
 }
 
 #[test]
