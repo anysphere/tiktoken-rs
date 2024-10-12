@@ -9,9 +9,9 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     let mut f = File::create(&dest_path)?;
 
     let encodings = [
-        ("cl100k", EncodingFactory::cl100k_im()?),
+        ("cl100k_base", EncodingFactory::cl100k_im()?),
         ("llama3", EncodingFactory::llama3()?),
-        ("o200k", EncodingFactory::o200k_im()?),
+        ("o200k_base", EncodingFactory::o200k_im()?),
         ("codestral", EncodingFactory::codestral()?),
     ];
 

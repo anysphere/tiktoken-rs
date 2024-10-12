@@ -120,9 +120,9 @@ impl Encoding {
     fn get_prefixes_of_mergeable_ranks(name: &str, mergeable_ranks: &HashMap<Vec<u8>, usize>) -> HashSet<i64> {
         let dummy_value = HashSet::default();
         match name {
-            "cl100k_im" => dummy_value,
+            "cl100k_base" => dummy_value,
             "llama3" => dummy_value,
-            "o200k_im" => dummy_value,
+            "o200k_base" => dummy_value,
             "codestral" => dummy_value,
             _ => Self::compute_prefixes_of_mergeable_ranks(mergeable_ranks),
         }
@@ -136,9 +136,9 @@ impl Encoding {
     fn prefixes_of_mergeable_ranks_contains(&self, prefix: &i64) -> bool {
         #[cfg(feature = "embedded_prefixes")]
         match self.name.as_str() {
-            "cl100k_im" => return CL100K_PREFIXES.contains_key(prefix),
+            "cl100k_base" => return CL100K_BASE_PREFIXES.contains_key(prefix),
             "llama3" => return LLAMA3_PREFIXES.contains_key(prefix),
-            "o200k_im" => return O200K_PREFIXES.contains_key(prefix),
+            "o200k_base" => return O200K_BASE_PREFIXES.contains_key(prefix),
             "codestral" => return CODESTRAL_PREFIXES.contains_key(prefix),
             _ => {}
         }
@@ -588,7 +588,7 @@ mod tests {
     #[test_case(EncodingFactory::llama3 ; "llama3")]
     #[test_case(EncodingFactory::codestral ; "codestral")]
     #[test_case(EncodingFactory::cl100k_im ; "cl100k_im")]
-    #[test_case(EncodingFactory::cl100k_base ; "cl100k_base")]
+    #[test_case(EncodingFactory::o200k_im ; "o200k_im")]
     fn test_encoding_memory_usage(encoding_factory: fn() -> Result<Encoding, EncodingFactoryError>) {
         let initial_memory = memory_stats().unwrap().physical_mem;
 
