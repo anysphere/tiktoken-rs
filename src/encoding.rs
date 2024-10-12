@@ -6,6 +6,9 @@ use std::sync::Arc;
 use thiserror::Error;
 use const_primes::is_prime;
 
+#[cfg(feature = "embedded_prefixes")]
+include!("generated_prefixes.rs");
+
 /// A struct that represents an encoding scheme based on byte-pair encoding (BPE).
 #[derive(Debug)]
 pub struct Encoding {
@@ -18,7 +21,7 @@ pub struct Encoding {
     /// The maximum length of the keys in `mergeable_ranks`.
     mergeable_ranks_max_key_len: usize,
     /// All prefixes of the mergeable ranks. May or may not be tokens themselves!
-    prefixes_of_mergeable_ranks: HashSet<i64>,
+    pub prefixes_of_mergeable_ranks: HashSet<i64>,
     /// The map from special token strings to their values.
     special_tokens: HashMap<String, usize>,
     /// The maximum token value in the encoding.
@@ -99,16 +102,7 @@ impl Encoding {
         )
         .map_err(|e| EncodingError::GenericEncodingError(format!("Error creating core BPE: {}", e)))?;
 
-        let mut prefixes_of_mergeable_ranks = mergeable_ranks
-            .keys()
-            .flat_map(|bytes| {
-                (1..=bytes.len())
-                    .map(|i| roll_hash_slice(&bytes[..i]))
-                    .collect::<Vec<_>>()
-            })
-            .collect::<HashSet<_>>();
-        prefixes_of_mergeable_ranks.insert(0);
-        prefixes_of_mergeable_ranks.shrink_to_fit();
+        let prefixes_of_mergeable_ranks = Self::get_prefixes_of_mergeable_ranks(name, &mergeable_ranks);
 
         Ok(Self {
             name: name.to_string(),
@@ -120,6 +114,48 @@ impl Encoding {
             max_token_value,
             core_bpe: Arc::new(core_bpe),
         })
+    }
+
+    #[cfg(feature = "embedded_prefixes")]
+    fn get_prefixes_of_mergeable_ranks(name: &str, mergeable_ranks: &HashMap<Vec<u8>, usize>) -> HashSet<i64> {
+        let dummy_value = HashSet::default();
+        match name {
+            "cl100k_im" => dummy_value,
+            "llama3" => dummy_value,
+            "o200k_im" => dummy_value,
+            "codestral" => dummy_value,
+            _ => Self::compute_prefixes_of_mergeable_ranks(mergeable_ranks),
+        }
+    }
+
+    #[cfg(not(feature = "embedded_prefixes"))]
+    fn get_prefixes_of_mergeable_ranks(_name: &str, mergeable_ranks: &HashMap<Vec<u8>, usize>) -> HashSet<i64> {
+        Self::compute_prefixes_of_mergeable_ranks(mergeable_ranks)
+    }
+
+    fn prefixes_of_mergeable_ranks_contains(&self, prefix: &i64) -> bool {
+        #[cfg(feature = "embedded_prefixes")]
+        match self.name.as_str() {
+            "cl100k_im" => return CL100K_PREFIXES.contains_key(prefix),
+            "llama3" => return LLAMA3_PREFIXES.contains_key(prefix),
+            "o200k_im" => return O200K_PREFIXES.contains_key(prefix),
+            "codestral" => return CODESTRAL_PREFIXES.contains_key(prefix),
+            _ => {}
+        }
+        self.prefixes_of_mergeable_ranks.contains(prefix)
+    }
+
+    fn compute_prefixes_of_mergeable_ranks(mergeable_ranks: &HashMap<Vec<u8>, usize>) -> HashSet<i64> {
+        let mut prefixes = mergeable_ranks
+            .keys()
+            .flat_map(|bytes| {
+                (1..=bytes.len())
+                    .map(|i| roll_hash_slice(&bytes[..i]))
+                    .collect::<Vec<_>>()
+            })
+            .collect::<HashSet<_>>();
+        prefixes.insert(0);
+        prefixes
     }
 
     /// Encodes a string into tokens, ignoring special tokens.
@@ -151,7 +187,7 @@ impl Encoding {
             // or if the current token is not in the prefixes of mergeable ranks,
             // we need to split the current token and begin actually checking for the largest
             // mergeable prefix
-            while !self.prefixes_of_mergeable_ranks.contains(&current_token_hash)
+            while !self.prefixes_of_mergeable_ranks_contains(&current_token_hash)
                 || current_token.len() > self.mergeable_ranks_max_key_len
             {
                 if current_token.len() > 1 {
