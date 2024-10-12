@@ -41,7 +41,7 @@ fn generate_encoding_data(
 ) -> Result<(), Box<dyn std::error::Error>> {
     let prefixes = &encoding.prefixes_of_mergeable_ranks;
 
-    let mut table = HashTableOwned::<PrefixConfig>::with_capacity(prefixes.len(), 87);
+    let mut table = HashTableOwned::<PrefixConfig>::with_capacity(prefixes.len(), 50);
     for &prefix in prefixes.iter() {
         table.insert(&prefix, &());
     }
