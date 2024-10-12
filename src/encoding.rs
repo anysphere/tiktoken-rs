@@ -98,7 +98,7 @@ impl Encoding {
         let core_bpe = CoreBPE::new(
             mergeable_ranks.clone(),
             special_tokens.clone(),
-            pat_str.clone(),
+            pat_str,
         )
         .map_err(|e| EncodingError::GenericEncodingError(format!("Error creating core BPE: {}", e)))?;
 
