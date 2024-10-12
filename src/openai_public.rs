@@ -159,10 +159,53 @@ impl EncodingFactory {
       "3516b4e6e24389f7d1b288d861ce063da13296f916d29384e56ea9e0f6ba6674",
     )
     .map_err(|_| EncodingFactoryError::FailedToLoadEncoding)?;
-    let mut special_tokens: HashMap<String, usize> = [].iter().cloned().collect();
+    let special_tokens: HashMap<String, usize> = [].iter().cloned().collect();
 
     Encoding::new("deepseekv2", r"", mergeable_ranks, special_tokens, None)
       .map_err(|e| EncodingFactoryError::UnableToCreateEncoding(e.to_string()))
+  }
+
+  pub fn llama3() -> Result<Encoding, EncodingFactoryError> {
+    let mergeable_ranks = load_tiktoken_bpe(
+      include_bytes!("../data/llama3.tiktoken"),
+      "82e9d31979e92ab929cd544440f129d9ecd797b69e327f80f17e1c50d5551b55",
+    )
+    .map_err(|_| EncodingFactoryError::FailedToLoadEncoding)?;
+
+    let num_base_tokens = mergeable_ranks.len();
+    let mut special_tokens = vec![
+      "<|begin_of_text|>".to_string(),
+      "<|end_of_text|>".to_string(),
+      "<|reserved_special_token_0|>".to_string(),
+      "<|reserved_special_token_1|>".to_string(),
+      "<|reserved_special_token_2|>".to_string(),
+      "<|reserved_special_token_3|>".to_string(),
+      "<|start_header_id|>".to_string(),
+      "<|end_header_id|>".to_string(),
+      "<|reserved_special_token_4|>".to_string(),
+      "<|eot_id|>".to_string(), // end of turn
+    ];
+
+    let num_reserved_special_tokens = 256;
+    special_tokens.extend(
+      (5..num_reserved_special_tokens - 5).map(|i| format!("<|reserved_special_token_{}|>", i)),
+    );
+
+    let mut special_tokens_map: HashMap<String, usize> =
+      special_tokens.into_iter().enumerate().map(|(i, token)| (token, num_base_tokens + i)).collect();
+    special_tokens_map.shrink_to_fit();
+
+    let pat_str = r"(?i:'s|'t|'re|'ve|'m|'ll|'d)|[^\r\n\p{L}\p{N}]?\p{L}+|\p{N}{1,3}| ?[^\s\p{L}\p{N}]+[\r\n]*|\s*[\r\n]+|\s+(?!\S)|\s+";
+
+    let vocab_size = num_base_tokens + special_tokens_map.len();
+    Encoding::new(
+      "llama3",
+      pat_str,
+      mergeable_ranks,
+      special_tokens_map,
+      Some(vocab_size),
+    )
+    .map_err(|e| EncodingFactoryError::UnableToCreateEncoding(e.to_string()))
   }
 
   pub fn o200k_base() -> Result<Encoding, EncodingFactoryError> {

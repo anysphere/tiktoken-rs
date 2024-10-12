@@ -549,6 +549,8 @@ mod tests {
         assert_eq!(result, r2);
     }
 
+    #[test_case(EncodingFactory::llama3 ; "llama3")]
+    #[test_case(EncodingFactory::codestral ; "codestral")]
     #[test_case(EncodingFactory::cl100k_im ; "cl100k_im")]
     #[test_case(EncodingFactory::cl100k_base ; "cl100k_base")]
     fn test_encoding_memory_usage(encoding_factory: fn() -> Result<Encoding, EncodingFactoryError>) {
@@ -562,6 +564,6 @@ mod tests {
         println!("Memory used by {}: {} bytes", std::any::type_name_of_val(&encoding_factory), memory_used);
 
         // You can set a threshold based on your requirements
-        assert!(memory_used < 400 * 1024 * 1024, "Memory usage exceeded 100MB");
+        assert!(memory_used < 600 * 1024 * 1024, "Memory usage exceeded 600MB");
     }
 }
