@@ -7,7 +7,44 @@ use thiserror::Error;
 use const_primes::is_prime;
 
 #[cfg(feature = "embedded_prefixes")]
-include!("generated_prefixes.rs");
+mod embedded_prefixes {
+    use odht::HashTable;
+    use lazy_static::lazy_static;
+
+    pub static CL100K_BASE_PREFIXES: &[u8] = include_bytes!("../data/cl100k_base.prefixes");
+    pub static LLAMA3_PREFIXES: &[u8] = include_bytes!("../data/llama3.prefixes");
+    pub static O200K_BASE_PREFIXES: &[u8] = include_bytes!("../data/o200k_base.prefixes");
+    pub static CODESTRAL_PREFIXES: &[u8] = include_bytes!("../data/codestral.prefixes");
+
+    pub struct PrefixConfig;
+
+    impl odht::Config for PrefixConfig {
+        type Key = i64;
+        type Value = ();
+        type EncodedKey = [u8; 8];
+        type EncodedValue = [u8; 0];
+        type H = odht::FxHashFn;
+
+        fn encode_key(k: &Self::Key) -> Self::EncodedKey { k.to_le_bytes() }
+        fn encode_value(_: &Self::Value) -> Self::EncodedValue { [] }
+        fn decode_key(k: &Self::EncodedKey) -> Self::Key { i64::from_le_bytes(*k) }
+        fn decode_value(_: &Self::EncodedValue) -> Self::Value { () }
+    }
+
+    lazy_static! {
+        pub static ref CL100K_BASE_TABLE: HashTable<PrefixConfig, &'static [u8]> =
+            unsafe { HashTable::from_raw_bytes_unchecked(CL100K_BASE_PREFIXES) };
+        pub static ref LLAMA3_TABLE: HashTable<PrefixConfig, &'static [u8]> =
+            unsafe { HashTable::from_raw_bytes_unchecked(LLAMA3_PREFIXES) };
+        pub static ref O200K_BASE_TABLE: HashTable<PrefixConfig, &'static [u8]> =
+            unsafe { HashTable::from_raw_bytes_unchecked(O200K_BASE_PREFIXES) };
+        pub static ref CODESTRAL_TABLE: HashTable<PrefixConfig, &'static [u8]> =
+            unsafe { HashTable::from_raw_bytes_unchecked(CODESTRAL_PREFIXES) };
+    }
+}
+
+#[cfg(feature = "embedded_prefixes")]
+use embedded_prefixes::*;
 
 /// A struct that represents an encoding scheme based on byte-pair encoding (BPE).
 #[derive(Debug)]
@@ -135,14 +172,20 @@ impl Encoding {
 
     fn prefixes_of_mergeable_ranks_contains(&self, prefix: &i64) -> bool {
         #[cfg(feature = "embedded_prefixes")]
-        match self.name.as_str() {
-            "cl100k_base" => return CL100K_BASE_PREFIXES.contains(prefix),
-            "llama3" => return LLAMA3_PREFIXES.contains(prefix),
-            "o200k_base" => return O200K_BASE_PREFIXES.contains(prefix),
-            "codestral" => return CODESTRAL_PREFIXES.contains(prefix),
-            _ => {}
+        {
+            match self.name.as_str() {
+                "cl100k_base" => CL100K_BASE_TABLE.contains_key(prefix),
+                "llama3" => LLAMA3_TABLE.contains_key(prefix),
+                "o200k_base" => O200K_BASE_TABLE.contains_key(prefix),
+                "codestral" => CODESTRAL_TABLE.contains_key(prefix),
+                _ => self.prefixes_of_mergeable_ranks.contains(prefix),
+            }
         }
-        self.prefixes_of_mergeable_ranks.contains(prefix)
+
+        #[cfg(not(feature = "embedded_prefixes"))]
+        {
+            self.prefixes_of_mergeable_ranks.contains(prefix)
+        }
     }
 
     fn compute_prefixes_of_mergeable_ranks(mergeable_ranks: &HashMap<Vec<u8>, usize>) -> HashSet<i64> {

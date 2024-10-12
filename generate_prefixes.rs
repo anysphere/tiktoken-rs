@@ -2,12 +2,24 @@ use std::fs::File;
 use std::io::Write;
 use std::path::Path;
 use tiktoken::{Encoding, EncodingFactory};
-use phf_codegen::Set;
+use odht::{HashTableOwned, Config, FxHashFn};
+
+struct PrefixConfig;
+
+impl Config for PrefixConfig {
+    type Key = i64;
+    type Value = ();
+    type EncodedKey = [u8; 8];
+    type EncodedValue = [u8; 0];
+    type H = FxHashFn;
+
+    fn encode_key(k: &Self::Key) -> Self::EncodedKey { k.to_le_bytes() }
+    fn encode_value(_: &Self::Value) -> Self::EncodedValue { [] }
+    fn decode_key(k: &Self::EncodedKey) -> Self::Key { i64::from_le_bytes(*k) }
+    fn decode_value(_: &Self::EncodedValue) -> Self::Value { () }
+}
 
 fn main() -> Result<(), Box<dyn std::error::Error>> {
-    let dest_path = Path::new("src/generated_prefixes.rs");
-    let mut f = File::create(&dest_path)?;
-
     let encodings = [
         ("cl100k_base", EncodingFactory::cl100k_base()?),
         ("llama3", EncodingFactory::llama3()?),
@@ -15,33 +27,31 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         ("codestral", EncodingFactory::codestral()?),
     ];
 
-    writeln!(f, "// This file is auto-generated. Do not edit manually.")?;
-    writeln!(f)?;
-
     for (name, encoding) in encodings.iter() {
-        generate_encoding_data(&mut f, name, encoding)?;
+        generate_encoding_data(name, encoding)?;
     }
 
-    println!("Generated prefixes saved to {:?}", dest_path);
+    println!("Generated prefix files saved in data/ directory");
     Ok(())
 }
 
 fn generate_encoding_data(
-    f: &mut File,
     name: &str,
     encoding: &Encoding,
 ) -> Result<(), Box<dyn std::error::Error>> {
     let prefixes = &encoding.prefixes_of_mergeable_ranks;
 
-    writeln!(f, "pub static {}_PREFIXES: phf::Set<i64> = ", name.to_uppercase())?;
-
-    let mut set = Set::new();
+    let mut table = HashTableOwned::<PrefixConfig>::with_capacity(prefixes.len(), 87);
     for &prefix in prefixes.iter() {
-        set.entry(prefix);
+        table.insert(&prefix, &());
     }
 
-    writeln!(f, "{};", set.build())?;
-    writeln!(f)?;
+    let bytes = table.raw_bytes();
 
+    let dest_path = Path::new("data").join(format!("{}.prefixes", name));
+    let mut f = File::create(&dest_path)?;
+    f.write_all(bytes)?;
+
+    println!("Generated {} prefixes saved to {:?}", name, dest_path);
     Ok(())
 }
