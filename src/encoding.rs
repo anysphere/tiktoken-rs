@@ -136,10 +136,10 @@ impl Encoding {
     fn prefixes_of_mergeable_ranks_contains(&self, prefix: &i64) -> bool {
         #[cfg(feature = "embedded_prefixes")]
         match self.name.as_str() {
-            "cl100k_base" => return CL100K_BASE_PREFIXES.contains_key(prefix),
-            "llama3" => return LLAMA3_PREFIXES.contains_key(prefix),
-            "o200k_base" => return O200K_BASE_PREFIXES.contains_key(prefix),
-            "codestral" => return CODESTRAL_PREFIXES.contains_key(prefix),
+            "cl100k_base" => return CL100K_BASE_PREFIXES.contains(prefix),
+            "llama3" => return LLAMA3_PREFIXES.contains(prefix),
+            "o200k_base" => return O200K_BASE_PREFIXES.contains(prefix),
+            "codestral" => return CODESTRAL_PREFIXES.contains(prefix),
             _ => {}
         }
         self.prefixes_of_mergeable_ranks.contains(prefix)

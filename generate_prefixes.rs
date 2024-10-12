@@ -2,16 +2,16 @@ use std::fs::File;
 use std::io::Write;
 use std::path::Path;
 use tiktoken::{Encoding, EncodingFactory};
-use phf_codegen::Map;
+use phf_codegen::Set;
 
 fn main() -> Result<(), Box<dyn std::error::Error>> {
     let dest_path = Path::new("src/generated_prefixes.rs");
     let mut f = File::create(&dest_path)?;
 
     let encodings = [
-        ("cl100k_base", EncodingFactory::cl100k_im()?),
+        ("cl100k_base", EncodingFactory::cl100k_base()?),
         ("llama3", EncodingFactory::llama3()?),
-        ("o200k_base", EncodingFactory::o200k_im()?),
+        ("o200k_base", EncodingFactory::o200k_base()?),
         ("codestral", EncodingFactory::codestral()?),
     ];
 
@@ -33,14 +33,14 @@ fn generate_encoding_data(
 ) -> Result<(), Box<dyn std::error::Error>> {
     let prefixes = &encoding.prefixes_of_mergeable_ranks;
 
-    writeln!(f, "pub static {}_PREFIXES: phf::Map<i64, ()> = ", name.to_uppercase())?;
+    writeln!(f, "pub static {}_PREFIXES: phf::Set<i64> = ", name.to_uppercase())?;
 
-    let mut map = Map::new();
+    let mut set = Set::new();
     for &prefix in prefixes.iter() {
-        map.entry(prefix, "()");
+        set.entry(prefix);
     }
 
-    writeln!(f, "{};", map.build())?;
+    writeln!(f, "{};", set.build())?;
     writeln!(f)?;
 
     Ok(())
