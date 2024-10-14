@@ -1,4 +1,4 @@
-use odht::{Config, FxHashFn};
+use odht::{Config, FxHashFn, HashTable};
 
 pub struct PrefixConfig;
 pub struct EncoderConfig;
@@ -64,5 +64,20 @@ impl Config for DecoderConfig {
         let mut value = v[8..].to_vec();
         value.resize(len, 0);
         value
+    }
+}
+
+pub trait HashTableExt<C: Config> {
+    fn keys(&self) -> impl Iterator<Item = C::EncodedKey>;
+    fn values(&self) -> impl Iterator<Item = C::EncodedValue>;
+}
+
+impl<C: Config> HashTableExt<C> for HashTable<C, &'static [u8]> {
+    fn keys(&self) -> impl Iterator<Item = C::EncodedKey> {
+        self.iter().map(|(k, _)| C::encode_key(&k))
+    }
+
+    fn values(&self) -> impl Iterator<Item = C::EncodedValue> {
+        self.iter().map(|(_, v)| C::encode_value(&v))
     }
 }

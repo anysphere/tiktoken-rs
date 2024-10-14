@@ -47,6 +47,8 @@ pub mod embedded {
 
 #[cfg(feature = "embedded")]
 use embedded::*;
+#[cfg(feature = "embedded")]
+use crate::embedded::HashTableExt;
 
 /// A struct that represents an encoding scheme based on byte-pair encoding (BPE).
 #[derive(Debug)]
@@ -111,6 +113,14 @@ impl Encoding {
         special_tokens: HashMap<String, usize>,
         explicit_n_vocab: Option<usize>,
     ) -> Result<Self, EncodingError> {
+        #[cfg(feature = "embedded")]
+        let mergeable_ranks = Arc::new(match name {
+            "cl100k_base" => &CL100K_BASE_TABLE.encoder,
+            "o200k_base" => &O200K_BASE_TABLE.encoder,
+            "codestral" => &CODESTRAL_TABLE.encoder,
+            "llama3" => &LLAMA3_TABLE.encoder,
+            _ => return Err(EncodingError::GenericEncodingError("Unknown encoding not found in embedded mode".to_string())),
+        });
         let max_token_value = match mergeable_ranks
             .values()
             .chain(special_tokens.values())
@@ -142,7 +152,26 @@ impl Encoding {
         )
         .map_err(|e| EncodingError::GenericEncodingError(format!("Error creating core BPE: {}", e)))?;
 
-        let prefixes_of_mergeable_ranks = Self::get_prefixes_of_mergeable_ranks(name, &mergeable_ranks);
+        let prefixes_of_mergeable_ranks = if cfg!(feature = "embedded") {
+            match name {
+                "cl100k_base" => CL100K_BASE_TABLE.prefixes,
+                "o200k_base" => O200K_BASE_TABLE.prefixes,
+                "codestral" => CODESTRAL_TABLE.prefixes,
+                "llama3" => LLAMA3_TABLE.prefixes,
+                _ => return Err(EncodingError::GenericEncodingError("Unknown encoding not found in embedded mode".to_string())),
+            }
+        } else {
+            let prefixes = mergeable_ranks
+                .keys()
+                .flat_map(|bytes| {
+                    (1..=bytes.len())
+                        .map(|i| roll_hash_slice(&bytes[..i]))
+                        .collect::<Vec<_>>()
+                })
+                .collect::<HashSet<_>>();
+            prefixes.insert(0);
+            prefixes
+        }
 
         Ok(Self {
             name: name.to_string(),
@@ -156,52 +185,22 @@ impl Encoding {
         })
     }
 
-    #[cfg(feature = "embedded_prefixes")]
-    fn get_prefixes_of_mergeable_ranks(name: &str, mergeable_ranks: &HashMap<Vec<u8>, usize>) -> HashSet<i64> {
-        let dummy_value = HashSet::default();
-        match name {
-            "cl100k_base" => dummy_value,
-            "llama3" => dummy_value,
-            "o200k_base" => dummy_value,
-            "codestral" => dummy_value,
-            _ => Self::compute_prefixes_of_mergeable_ranks(mergeable_ranks),
-        }
-    }
-
-    #[cfg(not(feature = "embedded_prefixes"))]
-    fn get_prefixes_of_mergeable_ranks(_name: &str, mergeable_ranks: &HashMap<Vec<u8>, usize>) -> HashSet<i64> {
-        Self::compute_prefixes_of_mergeable_ranks(mergeable_ranks)
-    }
-
     fn prefixes_of_mergeable_ranks_contains(&self, prefix: &i64) -> bool {
-        #[cfg(feature = "embedded_prefixes")]
+        #[cfg(feature = "embedded")]
         {
             match self.name.as_str() {
-                "cl100k_base" => CL100K_BASE_TABLE.contains_key(prefix),
-                "llama3" => LLAMA3_TABLE.contains_key(prefix),
-                "o200k_base" => O200K_BASE_TABLE.contains_key(prefix),
-                "codestral" => CODESTRAL_TABLE.contains_key(prefix),
+                "cl100k_base" => CL100K_BASE_TABLE.prefixes.contains_key(prefix),
+                "llama3" => LLAMA3_TABLE.prefixes.contains_key(prefix),
+                "o200k_base" => O200K_BASE_TABLE.prefixes.contains_key(prefix),
+                "codestral" => CODESTRAL_TABLE.prefixes.contains_key(prefix),
                 _ => self.prefixes_of_mergeable_ranks.contains(prefix),
             }
         }
 
-        #[cfg(not(feature = "embedded_prefixes"))]
+        #[cfg(not(feature = "embedded"))]
         {
             self.prefixes_of_mergeable_ranks.contains(prefix)
         }
-    }
-
-    fn compute_prefixes_of_mergeable_ranks(mergeable_ranks: &HashMap<Vec<u8>, usize>) -> HashSet<i64> {
-        let mut prefixes = mergeable_ranks
-            .keys()
-            .flat_map(|bytes| {
-                (1..=bytes.len())
-                    .map(|i| roll_hash_slice(&bytes[..i]))
-                    .collect::<Vec<_>>()
-            })
-            .collect::<HashSet<_>>();
-        prefixes.insert(0);
-        prefixes
     }
 
     /// Encodes a string into tokens, ignoring special tokens.
