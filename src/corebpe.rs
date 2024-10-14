@@ -162,7 +162,7 @@ fn hash_current_thread() -> usize {
     u64::from(x) as usize
 }
 
-const MAX_NUM_THREADS: usize = 128;
+const MAX_NUM_THREADS: usize = 8;
 
 #[derive(Debug)]
 pub struct CoreBPE {
