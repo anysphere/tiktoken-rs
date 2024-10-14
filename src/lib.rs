@@ -2,6 +2,8 @@ mod corebpe;
 mod encoding;
 mod load;
 mod openai_public;
+mod embedded;
+mod rollhash;
 
 #[cfg(test)]
 mod tests;
