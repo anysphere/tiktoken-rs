@@ -7,15 +7,15 @@ use std::sync::Arc;
 use thiserror::Error;
 
 #[cfg(feature = "embedded")]
-mod embedded {
+pub mod embedded {
     use crate::embedded::*;
     use odht::HashTable;
     use lazy_static::lazy_static;
 
     pub struct Table {
-        prefixes: HashTable<PrefixConfig, &'static [u8]>,
-        encoder: HashTable<EncoderConfig, &'static [u8]>,
-        decoder: HashTable<DecoderConfig, &'static [u8]>
+        pub prefixes: HashTable<PrefixConfig, &'static [u8]>,
+        pub encoder: HashTable<EncoderConfig, &'static [u8]>,
+        pub decoder: HashTable<DecoderConfig, &'static [u8]>
     }
 
     lazy_static! {
@@ -60,7 +60,7 @@ pub struct Encoding {
     /// The maximum length of the keys in `mergeable_ranks`.
     mergeable_ranks_max_key_len: usize,
     /// All prefixes of the mergeable ranks. May or may not be tokens themselves!
-    pub prefixes_of_mergeable_ranks: HashSet<i64>,
+    prefixes_of_mergeable_ranks: HashSet<i64>,
     /// The map from special token strings to their values.
     special_tokens: HashMap<String, usize>,
     /// The maximum token value in the encoding.
@@ -106,6 +106,7 @@ impl Encoding {
     pub fn new(
         name: &str,
         pat_str: &str,
+        #[cfg(not(feature = "embedded"))]
         mergeable_ranks: Arc<HashMap<Vec<u8>, usize>>,
         special_tokens: HashMap<String, usize>,
         explicit_n_vocab: Option<usize>,
