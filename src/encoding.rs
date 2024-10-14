@@ -6,45 +6,47 @@ use rustc_hash::FxHashSet as HashSet;
 use std::sync::Arc;
 use thiserror::Error;
 
-#[cfg(feature = "embedded_prefixes")]
-mod embedded_prefixes {
+#[cfg(feature = "embedded")]
+mod embedded {
+    use crate::embedded::*;
     use odht::HashTable;
     use lazy_static::lazy_static;
 
-    pub static CL100K_BASE_PREFIXES: &[u8] = include_bytes!("../data/cl100k_base.prefixes");
-    pub static LLAMA3_PREFIXES: &[u8] = include_bytes!("../data/llama3.prefixes");
-    pub static O200K_BASE_PREFIXES: &[u8] = include_bytes!("../data/o200k_base.prefixes");
-    pub static CODESTRAL_PREFIXES: &[u8] = include_bytes!("../data/codestral.prefixes");
-
-    pub struct PrefixConfig;
-
-    impl odht::Config for PrefixConfig {
-        type Key = i64;
-        type Value = ();
-        type EncodedKey = [u8; 8];
-        type EncodedValue = [u8; 0];
-        type H = odht::FxHashFn;
-
-        fn encode_key(k: &Self::Key) -> Self::EncodedKey { k.to_le_bytes() }
-        fn encode_value(_: &Self::Value) -> Self::EncodedValue { [] }
-        fn decode_key(k: &Self::EncodedKey) -> Self::Key { i64::from_le_bytes(*k) }
-        fn decode_value(_: &Self::EncodedValue) -> Self::Value { () }
+    pub struct Table {
+        prefixes: HashTable<PrefixConfig, &'static [u8]>,
+        encoder: HashTable<EncoderConfig, &'static [u8]>,
+        decoder: HashTable<DecoderConfig, &'static [u8]>
     }
 
     lazy_static! {
-        pub static ref CL100K_BASE_TABLE: HashTable<PrefixConfig, &'static [u8]> =
-            unsafe { HashTable::from_raw_bytes_unchecked(CL100K_BASE_PREFIXES) };
-        pub static ref LLAMA3_TABLE: HashTable<PrefixConfig, &'static [u8]> =
-            unsafe { HashTable::from_raw_bytes_unchecked(LLAMA3_PREFIXES) };
-        pub static ref O200K_BASE_TABLE: HashTable<PrefixConfig, &'static [u8]> =
-            unsafe { HashTable::from_raw_bytes_unchecked(O200K_BASE_PREFIXES) };
-        pub static ref CODESTRAL_TABLE: HashTable<PrefixConfig, &'static [u8]> =
-            unsafe { HashTable::from_raw_bytes_unchecked(CODESTRAL_PREFIXES) };
+        pub static ref CL100K_BASE_TABLE: Table = Table {
+            prefixes: unsafe { HashTable::from_raw_bytes_unchecked(include_bytes!(concat!(env!("OUT_DIR"), "/cl100k_base.prefix.odht"))) },
+            encoder: unsafe { HashTable::from_raw_bytes_unchecked(include_bytes!(concat!(env!("OUT_DIR"), "/cl100k_base.encoder.odht"))) },
+            decoder: unsafe { HashTable::from_raw_bytes_unchecked(include_bytes!(concat!(env!("OUT_DIR"), "/cl100k_base.decoder.odht"))) },
+        };
+
+        pub static ref O200K_BASE_TABLE: Table = Table {
+            prefixes: unsafe { HashTable::from_raw_bytes_unchecked(include_bytes!(concat!(env!("OUT_DIR"), "/o200k_base.prefix.odht"))) },
+            encoder: unsafe { HashTable::from_raw_bytes_unchecked(include_bytes!(concat!(env!("OUT_DIR"), "/o200k_base.encoder.odht"))) },
+            decoder: unsafe { HashTable::from_raw_bytes_unchecked(include_bytes!(concat!(env!("OUT_DIR"), "/o200k_base.decoder.odht"))) },
+        };
+
+        pub static ref CODESTRAL_TABLE: Table = Table {
+            prefixes: unsafe { HashTable::from_raw_bytes_unchecked(include_bytes!(concat!(env!("OUT_DIR"), "/codestral.prefix.odht"))) },
+            encoder: unsafe { HashTable::from_raw_bytes_unchecked(include_bytes!(concat!(env!("OUT_DIR"), "/codestral.encoder.odht"))) },
+            decoder: unsafe { HashTable::from_raw_bytes_unchecked(include_bytes!(concat!(env!("OUT_DIR"), "/codestral.decoder.odht"))) },
+        };
+
+        pub static ref LLAMA3_TABLE: Table = Table {
+            prefixes: unsafe { HashTable::from_raw_bytes_unchecked(include_bytes!(concat!(env!("OUT_DIR"), "/llama3.prefix.odht"))) },
+            encoder: unsafe { HashTable::from_raw_bytes_unchecked(include_bytes!(concat!(env!("OUT_DIR"), "/llama3.encoder.odht"))) },
+            decoder: unsafe { HashTable::from_raw_bytes_unchecked(include_bytes!(concat!(env!("OUT_DIR"), "/llama3.decoder.odht"))) },
+        };
     }
 }
 
-#[cfg(feature = "embedded_prefixes")]
-use embedded_prefixes::*;
+#[cfg(feature = "embedded")]
+use embedded::*;
 
 /// A struct that represents an encoding scheme based on byte-pair encoding (BPE).
 #[derive(Debug)]

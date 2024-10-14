@@ -9,7 +9,7 @@ build = "build.rs"
 name = "tiktoken"
 
 [features]
-embedded_prefixes = []
+embedded = []
 
 [dev-dependencies]
 criterion = "0.4"

@@ -1,8 +1,8 @@
 use odht::{Config, FxHashFn};
 
-struct PrefixConfig;
-struct TokenBytesConfig;
-struct TokenRankConfig;
+pub struct PrefixConfig;
+pub struct EncoderConfig;
+pub struct DecoderConfig;
 
 const MAX_TOKEN_BYTES: usize = 128;
 
@@ -19,7 +19,7 @@ impl Config for PrefixConfig {
     fn decode_value(_: &Self::EncodedValue) -> Self::Value { () }
 }
 
-impl Config for TokenBytesConfig {
+impl Config for EncoderConfig {
     type Key = Vec<u8>;
     type Value = usize;
     type EncodedKey = [u8; 8+MAX_TOKEN_BYTES];
@@ -43,7 +43,7 @@ impl Config for TokenBytesConfig {
     fn decode_value(v: &Self::EncodedValue) -> Self::Value { usize::from_le_bytes(*v) }
 }
 
-impl Config for TokenRankConfig {
+impl Config for DecoderConfig {
     type Key = usize;
     type Value = Vec<u8>;
     type EncodedKey = [u8; 8];

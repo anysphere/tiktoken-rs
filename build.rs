@@ -58,12 +58,12 @@ fn generate_odht(name: &str, mergeable_ranks: &HashMap<Vec<u8>, usize>) {
     assert!(mergeable_ranks_max_key_len <= MAX_TOKEN_BYTES, "mergeable_ranks_max_key_len ({}) is greater than MAX_TOKEN_BYTES ({})", mergeable_ranks_max_key_len, MAX_TOKEN_BYTES);
 
     let load_factor = 50; // percent
-    let mut bytes = HashTableOwned::<TokenBytesConfig>::with_capacity(mergeable_ranks.len(), load_factor);
-    let mut ranks = HashTableOwned::<TokenRankConfig>::with_capacity(mergeable_ranks.len(), load_factor);
+    let mut encoder = HashTableOwned::<EncoderConfig>::with_capacity(mergeable_ranks.len(), load_factor);
+    let mut decoder = HashTableOwned::<DecoderConfig>::with_capacity(mergeable_ranks.len(), load_factor);
 
     for (k, v) in mergeable_ranks.iter() {
-        bytes.insert(k, v);
-        ranks.insert(v, k);
+        encoder.insert(k, v);
+        decoder.insert(v, k);
     }
 
     let mut prefixes = mergeable_ranks
@@ -81,13 +81,13 @@ fn generate_odht(name: &str, mergeable_ranks: &HashMap<Vec<u8>, usize>) {
         prefs.insert(&prefix, &());
     }
 
-    let dest_path = Path::new(&env::var("OUT_DIR").unwrap()).join(format!("{}.tokenbytes.odht", name));
+    let dest_path = Path::new(&env::var("OUT_DIR").unwrap()).join(format!("{}.encoder.odht", name));
     let mut f = File::create(&dest_path).unwrap();
-    f.write_all(bytes.raw_bytes()).unwrap();
+    f.write_all(encoder.raw_bytes()).unwrap();
 
-    let dest_path = Path::new(&env::var("OUT_DIR").unwrap()).join(format!("{}.tokenrank.odht", name));
+    let dest_path = Path::new(&env::var("OUT_DIR").unwrap()).join(format!("{}.decoder.odht", name));
     let mut f = File::create(&dest_path).unwrap();
-    f.write_all(ranks.raw_bytes()).unwrap();
+    f.write_all(decoder.raw_bytes()).unwrap();
 
     let dest_path = Path::new(&env::var("OUT_DIR").unwrap()).join(format!("{}.prefix.odht", name));
     let mut f = File::create(&dest_path).unwrap();
