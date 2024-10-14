@@ -12,10 +12,14 @@ pub mod embedded {
     use odht::HashTable;
     use lazy_static::lazy_static;
 
+    pub type PrefixTable = HashTable<PrefixConfig, &'static [u8]>;
+    pub type EncoderTable = HashTable<EncoderConfig, &'static [u8]>;
+    pub type DecoderTable = HashTable<DecoderConfig, &'static [u8]>;
+
     pub struct Table {
-        pub prefixes: HashTable<PrefixConfig, &'static [u8]>,
-        pub encoder: HashTable<EncoderConfig, &'static [u8]>,
-        pub decoder: HashTable<DecoderConfig, &'static [u8]>
+        pub prefixes: PrefixTable,
+        pub encoder: EncoderTable,
+        pub decoder: DecoderTable
     }
 
     lazy_static! {
@@ -50,15 +54,29 @@ use embedded::*;
 #[cfg(feature = "embedded")]
 use crate::embedded::HashTableExt;
 
+#[cfg(feature = "embedded")]
+pub type EncoderHashTable = EncoderTable;
+#[cfg(feature = "embedded")]
+pub type DecoderHashTable = DecoderTable;
+#[cfg(feature = "embedded")]
+pub type PrefixHashTable = PrefixTable;
+
+#[cfg(not(feature = "embedded"))]
+pub type EncoderHashTable = HashMap<Vec<u8>, usize>;
+#[cfg(not(feature = "embedded"))]
+pub type DecoderHashTable = HashMap<usize, Vec<u8>>;
+#[cfg(not(feature = "embedded"))]
+pub type PrefixHashTable = HashSet<i64>;
+
+
 /// A struct that represents an encoding scheme based on byte-pair encoding (BPE).
-#[derive(Debug)]
 pub struct Encoding {
     /// The name of the encoding.
     pub name: String,
     /// The regular expression pattern used to split text into pieces.
     pat_str: String,
     /// The map from mergeable byte sequences to their ranks.
-    mergeable_ranks: Arc<HashMap<Vec<u8>, usize>>,
+    mergeable_ranks: Arc<EncoderHashTable>,
     /// The maximum length of the keys in `mergeable_ranks`.
     mergeable_ranks_max_key_len: usize,
     /// All prefixes of the mergeable ranks. May or may not be tokens themselves!
@@ -109,23 +127,22 @@ impl Encoding {
         name: &str,
         pat_str: &str,
         #[cfg(not(feature = "embedded"))]
-        mergeable_ranks: Arc<HashMap<Vec<u8>, usize>>,
+        mergeable_ranks: Arc<EncoderHashTable>,
         special_tokens: HashMap<String, usize>,
         explicit_n_vocab: Option<usize>,
     ) -> Result<Self, EncodingError> {
         #[cfg(feature = "embedded")]
         let mergeable_ranks = Arc::new(match name {
-            "cl100k_base" => &CL100K_BASE_TABLE.encoder,
-            "o200k_base" => &O200K_BASE_TABLE.encoder,
-            "codestral" => &CODESTRAL_TABLE.encoder,
-            "llama3" => &LLAMA3_TABLE.encoder,
+            "cl100k_base" => CL100K_BASE_TABLE.encoder,
+            "o200k_base" => O200K_BASE_TABLE.encoder,
+            "codestral" => CODESTRAL_TABLE.encoder,
+            "llama3" => LLAMA3_TABLE.encoder,
             _ => return Err(EncodingError::GenericEncodingError("Unknown encoding not found in embedded mode".to_string())),
         });
         let max_token_value = match mergeable_ranks
             .values()
-            .chain(special_tokens.values())
+            .chain(special_tokens.values().into())
             .max()
-            .copied()
         {
             Some(value) => value,
             None => return Err(EncodingError::GenericEncodingError("No token values found".to_string())),
@@ -146,6 +163,7 @@ impl Encoding {
             .ok_or_else(|| EncodingError::GenericEncodingError("No mergeable ranks found".to_string()))?;
 
         let core_bpe = CoreBPE::new(
+            name.to_string(),
             mergeable_ranks.clone(),
             special_tokens.clone(),
             pat_str,

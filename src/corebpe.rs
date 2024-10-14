@@ -5,6 +5,9 @@ use rustc_hash::FxHashMap as HashMap;
 use rustc_hash::FxHashSet as HashSet;
 use std::sync::Arc;
 
+use crate::encoding::{EncoderHashTable, DecoderHashTable};
+use crate::embedded::HashTableExt;
+
 fn _byte_pair_merge<T>(
     piece: &[u8],
     ranks: &HashMap<Vec<u8>, usize>,
@@ -91,14 +94,14 @@ fn _byte_pair_merge<T>(
     out
 }
 
-pub fn byte_pair_encode(piece: &[u8], ranks: &HashMap<Vec<u8>, usize>) -> Vec<usize> {
+pub fn byte_pair_encode(piece: &[u8], ranks: &EncoderHashTable) -> Vec<usize> {
     if piece.len() == 1 {
         return vec![ranks[piece]];
     }
     _byte_pair_merge(piece, ranks, |p| ranks[&piece[p.start..p.end]])
 }
 
-pub fn byte_pair_split<'a>(piece: &'a [u8], ranks: &HashMap<Vec<u8>, usize>) -> Vec<&'a [u8]> {
+pub fn byte_pair_split<'a>(piece: &'a [u8], ranks: &DecoderHashTable) -> Vec<&'a [u8]> {
     if piece.len() == 1 {
         return vec![piece];
     }
@@ -164,11 +167,11 @@ fn hash_current_thread() -> usize {
 
 const MAX_NUM_THREADS: usize = 8;
 
-#[derive(Debug)]
 pub struct CoreBPE {
-    encoder: Arc<HashMap<Vec<u8>, usize>>,
+    name: String,
+    encoder: Arc<EncoderHashTable>,
     special_tokens_encoder: HashMap<String, usize>,
-    decoder: HashMap<usize, Vec<u8>>,
+    decoder: DecoderHashTable,
     special_tokens_decoder: HashMap<usize, Vec<u8>>,
     regex_tls: Arc<[Regex]>,
     special_regex_tls: Arc<[Regex]>,
@@ -429,7 +432,8 @@ impl CoreBPE {
 
 impl CoreBPE {
     pub fn new(
-        encoder: Arc<HashMap<Vec<u8>, usize>>,
+        name: String,
+        encoder: Arc<EncoderHashTable>,
         special_tokens_encoder: HashMap<String, usize>,
         pattern: &str,
     ) -> Result<Self, fancy_regex::Error> {
@@ -461,6 +465,7 @@ impl CoreBPE {
         sorted_token_bytes.sort();
 
         Ok(CoreBPE {
+            name,
             encoder,
             special_tokens_encoder,
             decoder,
