@@ -68,16 +68,16 @@ impl Config for DecoderConfig {
 }
 
 pub trait HashTableExt<C: Config> {
-    fn keys(&self) -> impl Iterator<Item = C::EncodedKey>;
-    fn values(&self) -> impl Iterator<Item = C::EncodedValue>;
+    fn keys(&self) -> impl Iterator<Item = C::Key>;
+    fn values(&self) -> impl Iterator<Item = C::Value>;
 }
 
 impl<C: Config> HashTableExt<C> for HashTable<C, &'static [u8]> {
-    fn keys(&self) -> impl Iterator<Item = C::EncodedKey> {
-        self.iter().map(|(k, _)| C::encode_key(&k))
+    fn keys(&self) -> impl Iterator<Item = C::Key> {
+        self.iter().map(|(k, _)| k)
     }
 
-    fn values(&self) -> impl Iterator<Item = C::EncodedValue> {
-        self.iter().map(|(_, v)| C::encode_value(&v))
+    fn values(&self) -> impl Iterator<Item = C::Value> {
+        self.iter().map(|(_, v)| v)
     }
 }
