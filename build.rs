@@ -9,10 +9,8 @@ fn main() {
     println!("cargo:rerun-if-changed=build.rs");
     println!("cargo:rerun-if-changed=src/load.rs");
     
-
     let out_dir = env::var("OUT_DIR").unwrap();
-    let phf_path = Path::new(&out_dir).join("static.rs");
-    let mut file = File::create(&phf_path).unwrap();
+    let mut file = File::create(&Path::new(&out_dir).join("static.rs")).unwrap();
     writeln!(file, "pub mod data {{").unwrap();
 
     generate("r50k_base",
