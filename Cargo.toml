@@ -3,6 +3,10 @@ name = "tiktoken"
 version = "0.1.0"
 edition = "2021"
 rust-version = "1.57.0"
+build = "build.rs"
+
+[features]
+static = []
 
 [lib]
 name = "tiktoken"
@@ -12,6 +16,12 @@ criterion = "0.4"
 tiktoken-rs = "0.5.4"
 memory-stats = "1.2.0"
 test-case = "2.0.0-rc3"
+
+[build-dependencies]
+hex = "0.4.3"
+sha2 = "0.10.6"
+base64 = "0.21.0"
+rustc-hash = "1.1.0"
 
 [dependencies]
 fancy-regex = "0.10.0"
