@@ -103,17 +103,18 @@ impl Encoding {
         )
         .map_err(|e| EncodingError::GenericEncodingError(format!("Error creating core BPE: {}", e)))?;
 
-        let prefixes_of_mergeable_ranks = HashTableOwned::<PrefixConfig>::from_raw_bytes(match name {
-            "r50k_base" => data::R50K_BASE_PREFIXES_ODHT,
-            "p50k_base" => data::P50K_BASE_PREFIXES_ODHT,
-            "cl100k_base" => data::CL100K_BASE_PREFIXES_ODHT,
-            "o200k_base" => data::O200K_BASE_PREFIXES_ODHT,
-            "codestral" => data::CODESTRAL_PREFIXES_ODHT,
-            "llama3" => data::LLAMA3_PREFIXES_ODHT,
-            "deepseekv2" => data::DEEPSEEKV2_PREFIXES_ODHT,
-            _ => return Err(EncodingError::GenericEncodingError("Unknown encoding name".to_string())),
-        })
-        .unwrap();
+        let prefixes_of_mergeable_ranks = unsafe {
+            HashTableOwned::<PrefixConfig>::from_raw_bytes_unchecked(match name {
+                "r50k_base" => data::R50K_BASE_PREFIXES_ODHT,
+                "p50k_base" => data::P50K_BASE_PREFIXES_ODHT,
+                "cl100k_base" => data::CL100K_BASE_PREFIXES_ODHT,
+                "o200k_base" => data::O200K_BASE_PREFIXES_ODHT,
+                "codestral" => data::CODESTRAL_PREFIXES_ODHT,
+                "llama3" => data::LLAMA3_PREFIXES_ODHT,
+                "deepseekv2" => data::DEEPSEEKV2_PREFIXES_ODHT,
+                _ => return Err(EncodingError::GenericEncodingError(format!("Embedded prefix table not found for encoding: {}", name))),
+            })
+        };
 
         Ok(Self {
             name: name.to_string(),
