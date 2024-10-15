@@ -24,6 +24,7 @@ sha2 = "0.10.6"
 rustc-hash = "1.1.0"
 base64 = "0.21.0"
 const-primes = "0.8.7"
+phf_codegen = "0.11.1"
 
 [dependencies]
 odht = "0.3.1"
@@ -37,6 +38,7 @@ sha2 = "0.10.6"
 base64 = "0.21.0"
 thiserror = "1.0.38"
 const-primes = "0.8.7"
+phf = "0.11.1"
 
 [[bench]]
 name = "bench"

@@ -55,11 +55,11 @@ use embedded::*;
 use crate::embedded::HashTableExt;
 
 #[cfg(feature = "embedded")]
-pub type EncoderHashTable = EncoderTable;
+pub type EncoderHashTable = &'static EncoderTable;
 #[cfg(feature = "embedded")]
-pub type DecoderHashTable = DecoderTable;
+pub type DecoderHashTable = &'static DecoderTable;
 #[cfg(feature = "embedded")]
-pub type PrefixHashTable = PrefixTable;
+pub type PrefixHashTable = &'static PrefixTable;
 
 #[cfg(not(feature = "embedded"))]
 pub type EncoderHashTable = HashMap<Vec<u8>, usize>;
@@ -80,7 +80,7 @@ pub struct Encoding {
     /// The maximum length of the keys in `mergeable_ranks`.
     mergeable_ranks_max_key_len: usize,
     /// All prefixes of the mergeable ranks. May or may not be tokens themselves!
-    prefixes_of_mergeable_ranks: HashSet<i64>,
+    prefixes_of_mergeable_ranks: PrefixHashTable,
     /// The map from special token strings to their values.
     special_tokens: HashMap<String, usize>,
     /// The maximum token value in the encoding.
@@ -133,18 +133,24 @@ impl Encoding {
     ) -> Result<Self, EncodingError> {
         #[cfg(feature = "embedded")]
         let mergeable_ranks = Arc::new(match name {
-            "cl100k_base" => CL100K_BASE_TABLE.encoder,
-            "o200k_base" => O200K_BASE_TABLE.encoder,
-            "codestral" => CODESTRAL_TABLE.encoder,
-            "llama3" => LLAMA3_TABLE.encoder,
+            "cl100k_base" => &CL100K_BASE_TABLE.encoder,
+            "o200k_base" => &O200K_BASE_TABLE.encoder,
+            "codestral" => &CODESTRAL_TABLE.encoder,
+            "llama3" => &LLAMA3_TABLE.encoder,
             _ => return Err(EncodingError::GenericEncodingError("Unknown encoding not found in embedded mode".to_string())),
         });
-        let max_token_value = match mergeable_ranks
+        #[cfg(feature = "embedded")]
+        let max_token_value = mergeable_ranks
+            .values()
+            .chain(special_tokens.values().copied())
+            .max();
+        #[cfg(not(feature = "embedded"))]
+        let max_token_value = mergeable_ranks
             .values()
             .chain(special_tokens.values())
             .max()
-            .copied()
-        {
+            .copied();
+        let max_token_value = match max_token_value {
             Some(value) => value,
             None => return Err(EncodingError::GenericEncodingError("No token values found".to_string())),
         };
@@ -173,10 +179,10 @@ impl Encoding {
 
         #[cfg(feature = "embedded")]
         let prefixes_of_mergeable_ranks = match name {
-            "cl100k_base" => CL100K_BASE_TABLE.prefixes,
-            "o200k_base" => O200K_BASE_TABLE.prefixes,
-            "codestral" => CODESTRAL_TABLE.prefixes,
-            "llama3" => LLAMA3_TABLE.prefixes,
+            "cl100k_base" => &CL100K_BASE_TABLE.prefixes,
+            "o200k_base" => &O200K_BASE_TABLE.prefixes,
+            "codestral" => &CODESTRAL_TABLE.prefixes,
+            "llama3" => &LLAMA3_TABLE.prefixes,
             _ => return Err(EncodingError::GenericEncodingError("Unknown encoding not found in embedded mode".to_string())),
         };
 
@@ -209,13 +215,7 @@ impl Encoding {
     fn prefixes_of_mergeable_ranks_contains(&self, prefix: &i64) -> bool {
         #[cfg(feature = "embedded")]
         {
-            match self.name.as_str() {
-                "cl100k_base" => CL100K_BASE_TABLE.prefixes.contains_key(prefix),
-                "llama3" => LLAMA3_TABLE.prefixes.contains_key(prefix),
-                "o200k_base" => O200K_BASE_TABLE.prefixes.contains_key(prefix),
-                "codestral" => CODESTRAL_TABLE.prefixes.contains_key(prefix),
-                _ => self.prefixes_of_mergeable_ranks.contains(prefix),
-            }
+            self.prefixes_of_mergeable_ranks.contains_key(prefix)
         }
 
         #[cfg(not(feature = "embedded"))]
