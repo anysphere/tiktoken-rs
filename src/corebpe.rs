@@ -7,7 +7,7 @@ use std::sync::Arc;
 
 fn _byte_pair_merge<T>(
     piece: &[u8],
-    ranks: &HashMap<Vec<u8>, usize>,
+    ranks: &HashMap<&'static [u8], usize>,
     f: impl Fn(std::ops::Range<usize>) -> T,
 ) -> Vec<T> {
     // This is a vector of (start, rank).
@@ -91,14 +91,14 @@ fn _byte_pair_merge<T>(
     out
 }
 
-pub fn byte_pair_encode(piece: &[u8], ranks: &HashMap<Vec<u8>, usize>) -> Vec<usize> {
+pub fn byte_pair_encode(piece: &[u8], ranks: &HashMap<&'static [u8], usize>) -> Vec<usize> {
     if piece.len() == 1 {
         return vec![ranks[piece]];
     }
     _byte_pair_merge(piece, ranks, |p| ranks[&piece[p.start..p.end]])
 }
 
-pub fn byte_pair_split<'a>(piece: &'a [u8], ranks: &HashMap<Vec<u8>, usize>) -> Vec<&'a [u8]> {
+pub fn byte_pair_split<'a>(piece: &'a [u8], ranks: &HashMap<&'static [u8], usize>) -> Vec<&'a [u8]> {
     if piece.len() == 1 {
         return vec![piece];
     }
@@ -166,7 +166,7 @@ const MAX_NUM_THREADS: usize = 8;
 
 #[derive(Debug)]
 pub struct CoreBPE {
-    encoder: Arc<HashMap<Vec<u8>, usize>>,
+    encoder: Arc<HashMap<&'static [u8], usize>>,
     special_tokens_encoder: HashMap<String, usize>,
     decoder: HashMap<usize, &'static [u8]>,
     special_tokens_decoder: HashMap<usize, Vec<u8>>,
@@ -430,7 +430,7 @@ impl CoreBPE {
 
 impl CoreBPE {
     pub fn new(
-        encoder: Arc<HashMap<Vec<u8>, usize>>,
+        encoder: Arc<HashMap<&'static [u8], usize>>,
         special_tokens_encoder: HashMap<String, usize>,
         pattern: &str,
     ) -> Result<Self, fancy_regex::Error> {
@@ -448,9 +448,7 @@ impl CoreBPE {
         let decoder: HashMap<usize, &'static [u8]> = encoder
             .iter()
             .map(|(k, v)| {
-                let bytes: &[u8] = k.as_slice();
-                let static_bytes: &'static [u8] = unsafe { std::mem::transmute(bytes) };
-                (*v, static_bytes)
+                (*v, *k)
             })
             .collect();
 
@@ -466,11 +464,7 @@ impl CoreBPE {
 
         let mut sorted_token_bytes: Vec<&'static [u8]> = encoder
             .keys()
-            .map(|k| {
-                let bytes: &[u8] = k.as_slice();
-                let static_bytes: &'static [u8] = unsafe { std::mem::transmute(bytes) };
-                static_bytes
-            })
+            .map(|k| *k)
             .collect();
         sorted_token_bytes.sort();
 
@@ -593,8 +587,8 @@ mod tests {
     #[test]
     fn very_simple_test() {
         let mut ranks = HashMap::default();
-        ranks.insert(b"ab".to_vec(), 1);
-        ranks.insert(b"cd".to_vec(), 2);
+        ranks.insert(&b"ab"[..], 1);
+        ranks.insert(&b"cd"[..], 2);
 
         let res = byte_pair_split(b"abcd", &ranks);
         assert_eq!(res, vec![b"ab", b"cd"]);

@@ -6,7 +6,7 @@ rust-version = "1.57.0"
 build = "build.rs"
 
 [features]
-static = []
+static-dev = []
 
 [lib]
 name = "tiktoken"

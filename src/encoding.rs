@@ -14,7 +14,7 @@ pub struct Encoding {
     /// The regular expression pattern used to split text into pieces.
     pat_str: String,
     /// The map from mergeable byte sequences to their ranks.
-    mergeable_ranks: Arc<HashMap<Vec<u8>, usize>>,
+    mergeable_ranks: Arc<HashMap<&'static [u8], usize>>,
     /// The maximum length of the keys in `mergeable_ranks`.
     mergeable_ranks_max_key_len: usize,
     /// All prefixes of the mergeable ranks. May or may not be tokens themselves!
@@ -64,7 +64,7 @@ impl Encoding {
     pub fn new(
         name: &str,
         pat_str: &str,
-        mergeable_ranks: Arc<HashMap<Vec<u8>, usize>>,
+        mergeable_ranks: Arc<HashMap<&'static [u8], usize>>,
         special_tokens: HashMap<String, usize>,
         explicit_n_vocab: Option<usize>,
     ) -> Result<Self, EncodingError> {
@@ -157,7 +157,7 @@ impl Encoding {
                 if current_token.len() > 1 {
                     new_current_token.clear();
                     new_current_token.push(current_token.pop().unwrap());
-                    while !self.mergeable_ranks.contains_key(&current_token) {
+                    while !self.mergeable_ranks.contains_key(current_token.as_slice()) {
                         if current_token.len() == 1 {
                             break;
                         }
@@ -177,14 +177,14 @@ impl Encoding {
             }
         }
 
-        while !self.mergeable_ranks.contains_key(&current_token) {
+        while !self.mergeable_ranks.contains_key(current_token.as_slice()) {
             if current_token.len() == 0 {
                 break;
             }
             if current_token.len() > 1 {
                 new_current_token.clear();
                 new_current_token.push(current_token.pop().unwrap());
-                while !self.mergeable_ranks.contains_key(&current_token) {
+                while !self.mergeable_ranks.contains_key(current_token.as_slice()) {
                     if current_token.len() == 1 {
                         break;
                     }

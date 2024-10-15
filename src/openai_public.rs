@@ -1,11 +1,9 @@
 use crate::encoding::Encoding;
 use rustc_hash::FxHashMap as HashMap;
 use thiserror::Error;
-
-#[cfg(feature = "static")]
 use std::sync::Arc;
-#[cfg(not(feature = "static"))]
-use crate::load::load_tiktoken_bpe;
+
+include!(concat!(env!("OUT_DIR"), "/static.rs"));
 
 #[derive(Error, Debug, Clone)]
 pub enum EncodingFactoryError {
@@ -25,9 +23,6 @@ const IM_START: &str = "<|im_start|>";
 const IM_END: &str = "<|im_end|>";
 const IM_SEP: &str = "<|im_sep|>";
 
-#[cfg(feature = "static")]
-include!(concat!(env!("OUT_DIR"), "/static.rs"));
-
 #[derive(Clone, Debug, Copy)]
 pub struct EncodingFactory {}
 impl EncodingFactory {
@@ -40,14 +35,7 @@ impl EncodingFactory {
   }
 
   pub fn r50k_base() -> Result<Encoding, EncodingFactoryError> {
-    #[cfg(feature = "static")]
-    let mergeable_ranks = Arc::new(data::R50K_BASE.iter().map(|&(k, v)| (k.to_vec(), v)).collect::<HashMap<Vec<u8>, usize>>());
-    #[cfg(not(feature = "static"))]
-    let mergeable_ranks = load_tiktoken_bpe(
-      include_bytes!("../data/r50k_base.tiktoken"),
-      "306cd27f03c1a714eca7108e03d66b7dc042abe8c258b44c199a7ed9838dd930",
-    )
-    .map_err(|_| EncodingFactoryError::FailedToLoadEncoding)?;
+    let mergeable_ranks = Arc::new(data::R50K_BASE.iter().copied(). collect::<HashMap<&'static [u8], usize>>());
     let mut special_tokens: HashMap<String, usize> =
       [(ENDOFTEXT.to_string(), 50256)].iter().cloned().collect();
     special_tokens.shrink_to_fit();
@@ -62,14 +50,7 @@ impl EncodingFactory {
   }
 
   pub fn p50k_base() -> Result<Encoding, EncodingFactoryError> {
-    #[cfg(feature = "static")]
-    let mergeable_ranks = Arc::new(data::P50K_BASE.iter().map(|&(k, v)| (k.to_vec(), v)).collect::<HashMap<Vec<u8>, usize>>());
-    #[cfg(not(feature = "static"))]
-    let mergeable_ranks = load_tiktoken_bpe(
-      include_bytes!("../data/p50k_base.tiktoken"),
-      "94b5ca7dff4d00767bc256fdd1b27e5b17361d7b8a5f968547f9f23eb70d2069",
-    )
-    .map_err(|_| EncodingFactoryError::FailedToLoadEncoding)?;
+    let mergeable_ranks = Arc::new(data::P50K_BASE.iter().copied().collect::<HashMap<&'static [u8], usize>>());
     let mut special_tokens: HashMap<String, usize> =
       [(ENDOFTEXT.to_string(), 50256)].iter().cloned().collect();
     special_tokens.shrink_to_fit();
@@ -111,14 +92,7 @@ impl EncodingFactory {
   pub fn cl100k_with_special_tokens(
     special_tokens: &[(String, usize)],
   ) -> Result<Encoding, EncodingFactoryError> {
-    #[cfg(feature = "static")]
-    let mergeable_ranks = Arc::new(data::CL100K_BASE.iter().map(|&(k, v)| (k.to_vec(), v)).collect::<HashMap<Vec<u8>, usize>>());
-    #[cfg(not(feature = "static"))]
-    let mergeable_ranks = load_tiktoken_bpe(
-      include_bytes!("../data/cl100k_base.tiktoken"),
-      "223921b76ee99bde995b7ff738513eef100fb51d18c93597a113bcffe865b2a7",
-    )
-    .map_err(|_| EncodingFactoryError::FailedToLoadEncoding)?;
+    let mergeable_ranks = Arc::new(data::CL100K_BASE.iter().copied().collect::<HashMap<&'static [u8], usize>>());
     let mut special_tokens: HashMap<String, usize> = special_tokens.iter().cloned().collect();
     special_tokens.shrink_to_fit();
     Encoding::new(
@@ -134,14 +108,7 @@ impl EncodingFactory {
   pub fn o200k_with_special_tokens(
     special_tokens: &[(String, usize)],
   ) -> Result<Encoding, EncodingFactoryError> {
-    #[cfg(feature = "static")]
-    let mergeable_ranks = Arc::new(data::O200K_BASE.iter().map(|&(k, v)| (k.to_vec(), v)).collect::<HashMap<Vec<u8>, usize>>());
-    #[cfg(not(feature = "static"))]
-    let mergeable_ranks = load_tiktoken_bpe(
-      include_bytes!("../data/o200k_base.tiktoken"),
-      "446a9538cb6c348e3516120d7c08b09f57c36495e2acfffe59a5bf8b0cfb1a2d",
-    )
-    .map_err(|_| EncodingFactoryError::FailedToLoadEncoding)?;
+    let mergeable_ranks = Arc::new(data::O200K_BASE.iter().copied().collect::<HashMap<&'static [u8], usize>>());
     let mut special_tokens: HashMap<String, usize> = special_tokens.iter().cloned().collect();
     special_tokens.shrink_to_fit();
 
@@ -160,14 +127,7 @@ impl EncodingFactory {
   }
 
   pub fn codestral() -> Result<Encoding, EncodingFactoryError> {
-    #[cfg(feature = "static")]
-    let mergeable_ranks = Arc::new(data::CODESTRAL.iter().map(|&(k, v)| (k.to_vec(), v)).collect::<HashMap<Vec<u8>, usize>>());
-    #[cfg(not(feature = "static"))]
-    let mergeable_ranks = load_tiktoken_bpe(
-      include_bytes!("../data/codestral.tiktoken"),
-      "bd5e66af07259851e88c3e483f88371dc2408cb0ce8b9787d29eaecdbb78eade",
-    )
-    .map_err(|_| EncodingFactoryError::FailedToLoadEncoding)?;
+    let mergeable_ranks = Arc::new(data::CODESTRAL.iter().copied().collect::<HashMap<&'static [u8], usize>>());
     let special_tokens: HashMap<String, usize> = [].iter().cloned().collect();
 
     Encoding::new("codestral", r"", mergeable_ranks, special_tokens, None)
@@ -175,14 +135,7 @@ impl EncodingFactory {
   }
 
   pub fn deepseekv2() -> Result<Encoding, EncodingFactoryError> {
-    #[cfg(feature = "static")]
-    let mergeable_ranks = Arc::new(data::DEEPSEEKV2.iter().map(|&(k, v)| (k.to_vec(), v)).collect::<HashMap<Vec<u8>, usize>>());
-    #[cfg(not(feature = "static"))]
-    let mergeable_ranks = load_tiktoken_bpe(
-      include_bytes!("../data/deepseekv2.tiktoken"),
-      "3516b4e6e24389f7d1b288d861ce063da13296f916d29384e56ea9e0f6ba6674",
-    )
-    .map_err(|_| EncodingFactoryError::FailedToLoadEncoding)?;
+    let mergeable_ranks = Arc::new(data::DEEPSEEKV2.iter().copied().collect::<HashMap<&'static [u8], usize>>());
     let special_tokens: HashMap<String, usize> = [].iter().cloned().collect();
 
     Encoding::new("deepseekv2", r"", mergeable_ranks, special_tokens, None)
@@ -190,14 +143,7 @@ impl EncodingFactory {
   }
 
   pub fn llama3() -> Result<Encoding, EncodingFactoryError> {
-    #[cfg(feature = "static")]
-    let mergeable_ranks = Arc::new(data::LLAMA3.iter().map(|&(k, v)| (k.to_vec(), v)).collect::<HashMap<Vec<u8>, usize>>());
-    #[cfg(not(feature = "static"))]
-    let mergeable_ranks = load_tiktoken_bpe(
-      include_bytes!("../data/llama3.tiktoken"),
-      "82e9d31979e92ab929cd544440f129d9ecd797b69e327f80f17e1c50d5551b55",
-    )
-    .map_err(|_| EncodingFactoryError::FailedToLoadEncoding)?;
+    let mergeable_ranks = Arc::new(data::LLAMA3.iter().copied().collect::<HashMap<&'static [u8], usize>>());
 
     let num_base_tokens = mergeable_ranks.len();
     let mut special_tokens = vec![

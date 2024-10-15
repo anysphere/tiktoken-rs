@@ -81,6 +81,11 @@ fn generate(
 
     let mut keys = mergeable_ranks.keys().collect::<Vec<_>>();
     keys.sort();
+    #[cfg(feature = "static-dev")]
+    {
+        // to keep rust-analyzer and dev-mode experience fast, we generate only the first 10 keys
+        keys = keys[..10].to_vec();
+    }
 
     for key in keys {
         let value = mergeable_ranks[key];
