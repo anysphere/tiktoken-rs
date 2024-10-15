@@ -10,7 +10,7 @@ use crate::embedded::HashTableExt;
 
 fn _byte_pair_merge<T>(
     piece: &[u8],
-    ranks: &HashMap<Vec<u8>, usize>,
+    ranks: &EncoderHashTable,
     f: impl Fn(std::ops::Range<usize>) -> T,
 ) -> Vec<T> {
     // This is a vector of (start, rank).
@@ -101,7 +101,7 @@ pub fn byte_pair_encode(piece: &[u8], ranks: &EncoderHashTable) -> Vec<usize> {
     _byte_pair_merge(piece, ranks, |p| ranks[&piece[p.start..p.end]])
 }
 
-pub fn byte_pair_split<'a>(piece: &'a [u8], ranks: &DecoderHashTable) -> Vec<&'a [u8]> {
+pub fn byte_pair_split<'a>(piece: &'a [u8], ranks: &EncoderHashTable) -> Vec<&'a [u8]> {
     if piece.len() == 1 {
         return vec![piece];
     }

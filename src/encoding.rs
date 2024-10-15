@@ -141,8 +141,9 @@ impl Encoding {
         });
         let max_token_value = match mergeable_ranks
             .values()
-            .chain(special_tokens.values().into())
+            .chain(special_tokens.values())
             .max()
+            .copied()
         {
             Some(value) => value,
             None => return Err(EncodingError::GenericEncodingError("No token values found".to_string())),
@@ -170,16 +171,18 @@ impl Encoding {
         )
         .map_err(|e| EncodingError::GenericEncodingError(format!("Error creating core BPE: {}", e)))?;
 
-        let prefixes_of_mergeable_ranks = if cfg!(feature = "embedded") {
-            match name {
-                "cl100k_base" => CL100K_BASE_TABLE.prefixes,
-                "o200k_base" => O200K_BASE_TABLE.prefixes,
-                "codestral" => CODESTRAL_TABLE.prefixes,
-                "llama3" => LLAMA3_TABLE.prefixes,
-                _ => return Err(EncodingError::GenericEncodingError("Unknown encoding not found in embedded mode".to_string())),
-            }
-        } else {
-            let prefixes = mergeable_ranks
+        #[cfg(feature = "embedded")]
+        let prefixes_of_mergeable_ranks = match name {
+            "cl100k_base" => CL100K_BASE_TABLE.prefixes,
+            "o200k_base" => O200K_BASE_TABLE.prefixes,
+            "codestral" => CODESTRAL_TABLE.prefixes,
+            "llama3" => LLAMA3_TABLE.prefixes,
+            _ => return Err(EncodingError::GenericEncodingError("Unknown encoding not found in embedded mode".to_string())),
+        };
+
+        #[cfg(not(feature = "embedded"))]
+        let prefixes_of_mergeable_ranks = {
+            let mut prefixes = mergeable_ranks
                 .keys()
                 .flat_map(|bytes| {
                     (1..=bytes.len())
@@ -189,7 +192,7 @@ impl Encoding {
                 .collect::<HashSet<_>>();
             prefixes.insert(0);
             prefixes
-        }
+        };
 
         Ok(Self {
             name: name.to_string(),
