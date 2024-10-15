@@ -3,6 +3,7 @@ name = "tiktoken"
 version = "0.1.0"
 edition = "2021"
 rust-version = "1.57.0"
+build = "build.rs"
 
 [lib]
 name = "tiktoken"
@@ -12,6 +13,14 @@ criterion = "0.4"
 tiktoken-rs = "0.5.4"
 memory-stats = "1.2.0"
 test-case = "2.0.0-rc3"
+
+[build-dependencies]
+hex = "0.4.3"
+sha2 = "0.10.6"
+base64 = "0.21.0"
+rustc-hash = "1.1.0"
+odht = "0.3.1"
+const-primes = "0.8.7"
 
 [dependencies]
 fancy-regex = "0.10.0"
@@ -23,6 +32,7 @@ sha2 = "0.10.6"
 base64 = "0.21.0"
 thiserror = "1.0.38"
 const-primes = "0.8.7"
+odht = "0.3.1"
 
 [[bench]]
 name = "bench"
