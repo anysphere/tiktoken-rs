@@ -28,15 +28,13 @@ impl Config for EncoderConfig {
 
     fn encode_key(k: &Self::Key) -> Self::EncodedKey {
         let mut encoded_key = [0; 8 + MAX_TOKEN_BYTES];
-        encoded_key[..8].copy_from_slice(&(k.len() as usize).to_le_bytes());
-        encoded_key[8..8+k.len()].copy_from_slice(k);
+        encoded_key[..8].copy_from_slice(&(k.len() as u64).to_le_bytes());
+        encoded_key[8..8+k.len()].copy_from_slice(&k[..k.len()]);
         encoded_key
     }
     fn decode_key(k: &Self::EncodedKey) -> Self::Key {
-        let len = usize::from_le_bytes(k[..8].try_into().unwrap());
-        let mut key = k[8..].to_vec();
-        key.resize(len, 0);
-        key
+        let len = u64::from_le_bytes(k[..8].try_into().unwrap()) as usize;
+        k[8..8+len].to_vec()
     }
 
     fn encode_value(v: &Self::Value) -> Self::EncodedValue { v.to_le_bytes() }
