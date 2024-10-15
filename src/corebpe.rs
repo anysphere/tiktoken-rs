@@ -168,11 +168,11 @@ const MAX_NUM_THREADS: usize = 8;
 pub struct CoreBPE {
     encoder: Arc<HashMap<Vec<u8>, usize>>,
     special_tokens_encoder: HashMap<String, usize>,
-    decoder: HashMap<usize, Vec<u8>>,
+    decoder: HashMap<usize, &'static [u8]>,
     special_tokens_decoder: HashMap<usize, Vec<u8>>,
     regex_tls: Arc<[Regex]>,
     special_regex_tls: Arc<[Regex]>,
-    sorted_token_bytes: Vec<Vec<u8>>,
+    sorted_token_bytes: Vec<&'static [u8]>,
 }
 
 impl CoreBPE {
@@ -193,7 +193,8 @@ impl CoreBPE {
             let token_bytes = self
                 .decoder
                 .get(token)
-                .unwrap_or_else(|| &self.special_tokens_decoder[token]);
+                .copied()
+                .unwrap_or_else(|| self.special_tokens_decoder[token].as_slice());
             ret.extend(token_bytes);
         }
         ret
@@ -341,12 +342,12 @@ impl CoreBPE {
         // Separating this from the loop below helps with performance in a common case.
         let mut point = self
             .sorted_token_bytes
-            .partition_point(|x| x.as_slice() < unstable_bytes.as_slice());
+            .partition_point(|x| *x < unstable_bytes.as_slice());
         while point < self.sorted_token_bytes.len()
             && self.sorted_token_bytes[point].starts_with(&unstable_bytes)
         {
             completions.insert(vec![
-                self.encoder[self.sorted_token_bytes[point].as_slice()],
+                self.encoder[self.sorted_token_bytes[point]],
             ]);
             point += 1;
         }
@@ -359,12 +360,12 @@ impl CoreBPE {
             let suffix = &unstable_bytes[i..];
             let mut point = self
                 .sorted_token_bytes
-                .partition_point(|x| x.as_slice() < suffix);
+                .partition_point(|x| *x < suffix);
             // TODO: Perf optimisation if suffix starts with " "?
             while point < self.sorted_token_bytes.len()
                 && self.sorted_token_bytes[point].starts_with(suffix)
             {
-                let possibility = [prefix, self.sorted_token_bytes[point].as_slice()].concat();
+                let possibility = [prefix, self.sorted_token_bytes[point]].concat();
                 let encoded = match std::str::from_utf8(&possibility) {
                     // Morally, this is byte_pair_encode(&possibility, &self.encoder)
                     // But we might have introduced a regex split which would prevent merges.
@@ -443,8 +444,15 @@ impl CoreBPE {
             Regex::new(&parts.join("|"))?
         };
 
-        let decoder: HashMap<usize, Vec<u8>> =
-            encoder.iter().map(|(k, v)| (*v, k.clone())).collect();
+        // Use unsafe to extend the lifetime of references to the encoder's keys
+        let decoder: HashMap<usize, &'static [u8]> = encoder
+            .iter()
+            .map(|(k, v)| {
+                let bytes: &[u8] = k.as_slice();
+                let static_bytes: &'static [u8] = unsafe { std::mem::transmute(bytes) };
+                (*v, static_bytes)
+            })
+            .collect();
 
         assert!(
             encoder.len() == decoder.len(),
@@ -456,8 +464,14 @@ impl CoreBPE {
             .map(|(k, v)| (*v, k.as_bytes().to_vec()))
             .collect();
 
-        // Clone because I don't know how to tell Rust I'm not going to change the map
-        let mut sorted_token_bytes: Vec<Vec<u8>> = encoder.keys().cloned().collect();
+        let mut sorted_token_bytes: Vec<&'static [u8]> = encoder
+            .keys()
+            .map(|k| {
+                let bytes: &[u8] = k.as_slice();
+                let static_bytes: &'static [u8] = unsafe { std::mem::transmute(bytes) };
+                static_bytes
+            })
+            .collect();
         sorted_token_bytes.sort();
 
         Ok(CoreBPE {
@@ -553,7 +567,7 @@ impl CoreBPE {
 
     pub fn decode_single_token_bytes(&self, token: usize) -> Result<Vec<u8>, usize> {
         if let Some(bytes) = self.decoder.get(&token) {
-            return Ok(bytes.clone());
+            return Ok(bytes.to_vec());
         }
         if let Some(bytes) = self.special_tokens_decoder.get(&token) {
             return Ok(bytes.clone());
@@ -566,7 +580,7 @@ impl CoreBPE {
     // ====================
 
     pub fn token_byte_values(&self) -> Vec<Vec<u8>> {
-        self.sorted_token_bytes.clone()
+        self.sorted_token_bytes.iter().map(|&bytes| bytes.to_vec()).collect()
     }
 }
 
