@@ -176,6 +176,7 @@ pub struct CoreBPE {
 }
 
 impl CoreBPE {
+    #[inline(always)]
     fn _get_tl_regex(&self) -> &Regex {
         // See performance notes above for what this is about
         // It's also a little janky, please make a better version of it!
@@ -183,10 +184,12 @@ impl CoreBPE {
         &self.regex_tls[hash_current_thread() % MAX_NUM_THREADS]
     }
 
+    #[inline(always)]
     fn _get_tl_special_regex(&self) -> &Regex {
         &self.special_regex_tls[hash_current_thread() % MAX_NUM_THREADS]
     }
 
+    #[inline(always)]
     fn _decode_native(&self, tokens: &[usize]) -> Vec<u8> {
         let mut ret = Vec::with_capacity(tokens.len() * 2);
         for token in tokens {
@@ -200,6 +203,7 @@ impl CoreBPE {
         ret
     }
 
+    #[inline(always)]
     fn _encode_ordinary_native(&self, text: &str) -> Vec<usize> {
         // This is the core of the encoding logic; the other functions in here
         // just make things complicated :-)
@@ -217,6 +221,7 @@ impl CoreBPE {
         ret
     }
 
+    #[inline(always)]
     fn _encode_native(&self, text: &str, allowed_special: &HashSet<&str>) -> (Vec<usize>, usize) {
         let special_regex = self._get_tl_special_regex();
         let regex = self._get_tl_regex();
