@@ -5,6 +5,7 @@ use sha2::Sha256;
 // call its methods without adding to the namespace.
 use base64::engine::general_purpose::STANDARD as BASE64;
 use base64::engine::Engine as _;
+use std::rc::Rc;
 
 // define the error
 #[derive(Debug, Clone)]
@@ -16,7 +17,7 @@ pub enum Error {
 pub fn load_tiktoken_bpe(
     tiktoken_bpe_contents: &[u8],
     shasum: &str,
-) -> Result<HashMap<Vec<u8>, usize>, Error> {
+) -> Result<Rc<HashMap<Vec<u8>, usize>>, Error> {
     // check the shasum
     let mut hasher = Sha256::new();
     hasher.update(tiktoken_bpe_contents);
@@ -42,5 +43,5 @@ pub fn load_tiktoken_bpe(
         map.insert(token, rank);
     }
     map.shrink_to_fit();
-    Ok(map)
+    Ok(Rc::new(map))
 }

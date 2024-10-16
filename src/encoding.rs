@@ -2,7 +2,7 @@ use crate::corebpe::CoreBPE;
 use regex::Regex;
 use rustc_hash::FxHashMap as HashMap;
 use rustc_hash::FxHashSet as HashSet;
-use std::sync::Arc;
+use std::rc::Rc;
 use thiserror::Error;
 use crate::rollhash::{roll_hash, roll_hash_slice};
 
@@ -14,7 +14,7 @@ pub struct Encoding {
     /// The regular expression pattern used to split text into pieces.
     pat_str: String,
     /// The map from mergeable byte sequences to their ranks.
-    mergeable_ranks: HashMap<Vec<u8>, usize>,
+    mergeable_ranks: Rc<HashMap<Vec<u8>, usize>>,
     /// The maximum length of the keys in `mergeable_ranks`.
     mergeable_ranks_max_key_len: usize,
     /// All prefixes of the mergeable ranks. May or may not be tokens themselves!
@@ -24,7 +24,7 @@ pub struct Encoding {
     /// The maximum token value in the encoding.
     max_token_value: usize,
     /// The core BPE logic implemented in Rust.
-    core_bpe: Arc<CoreBPE>,
+    core_bpe: CoreBPE,
 }
 
 // TODO: make a non-generic encoding error here
@@ -64,7 +64,7 @@ impl Encoding {
     pub fn new(
         name: &str,
         pat_str: &str,
-        mergeable_ranks: HashMap<Vec<u8>, usize>,
+        mergeable_ranks: Rc<HashMap<Vec<u8>, usize>>,
         special_tokens: HashMap<String, usize>,
         explicit_n_vocab: Option<usize>,
     ) -> Result<Self, EncodingError> {
@@ -118,7 +118,7 @@ impl Encoding {
             prefixes_of_mergeable_ranks,
             special_tokens,
             max_token_value,
-            core_bpe: Arc::new(core_bpe),
+            core_bpe,
         })
     }
 
