@@ -148,6 +148,7 @@ impl Encoding {
         let mut current_token = Vec::new();
         let mut current_token_hash: i64 = 0;
         let mut new_current_token = Vec::new();
+        let mergeable_ranks = self.mergeable_ranks.as_ref();
 
         for byte in text.bytes() {
             current_token.push(byte);
@@ -163,7 +164,7 @@ impl Encoding {
                 if current_token.len() > 1 {
                     new_current_token.clear();
                     new_current_token.push(current_token.pop().unwrap());
-                    while !self.mergeable_ranks.contains_key(&current_token) {
+                    while !mergeable_ranks.contains_key(&current_token) {
                         if current_token.len() == 1 {
                             break;
                         }
@@ -183,14 +184,14 @@ impl Encoding {
             }
         }
 
-        while !self.mergeable_ranks.contains_key(&current_token) {
+        while !mergeable_ranks.contains_key(&current_token) {
             if current_token.len() == 0 {
                 break;
             }
             if current_token.len() > 1 {
                 new_current_token.clear();
                 new_current_token.push(current_token.pop().unwrap());
-                while !self.mergeable_ranks.contains_key(&current_token) {
+                while !mergeable_ranks.contains_key(&current_token) {
                     if current_token.len() == 1 {
                         break;
                     }

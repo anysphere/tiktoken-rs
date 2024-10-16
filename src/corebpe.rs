@@ -205,13 +205,14 @@ impl CoreBPE {
         // just make things complicated :-)
         let regex = self._get_tl_regex();
         let mut ret = vec![];
+        let encoder = self.encoder.as_ref();
         for mat in regex.find_iter(text) {
             let piece = mat.unwrap().as_str().as_bytes();
-            if let Some(token) = self.encoder.get(piece) {
+            if let Some(token) = encoder.get(piece) {
                 ret.push(*token);
                 continue;
             }
-            ret.extend(&byte_pair_encode(piece, &self.encoder));
+            ret.extend(&byte_pair_encode(piece, encoder));
         }
         ret
     }
@@ -242,14 +243,15 @@ impl CoreBPE {
             let end = next_special.map_or(text.len(), |m| m.start());
 
             // Okay, here we go, compare this logic to _encode_ordinary_native
+            let encoder = self.encoder.as_ref();
             for mat in regex.find_iter(&text[start..end]) {
                 let piece = mat.unwrap().as_str().as_bytes();
-                if let Some(token) = self.encoder.get(piece) {
+                if let Some(token) = encoder.get(piece) {
                     last_piece_token_len = 1;
                     ret.push(*token);
                     continue;
                 }
-                let tokens = byte_pair_encode(piece, &self.encoder);
+                let tokens = byte_pair_encode(piece, encoder);
                 last_piece_token_len = tokens.len();
                 ret.extend(&tokens);
             }
