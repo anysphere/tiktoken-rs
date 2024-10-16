@@ -32,13 +32,6 @@ fn cl100k_base_benchmark(c: &mut Criterion) {
             ));
         });
     });
-    c.bench_function("cl100k_base_tiktoken-rs", |b| {
-        b.iter(|| {
-            black_box(y.encode_with_special_tokens(
-                &t
-            ));
-        });
-    });
     c.bench_function("cl100k_base_50atatime", |b| {
         b.iter(|| {
             black_box(t.chars()
@@ -57,7 +50,14 @@ fn cl100k_base_benchmark(c: &mut Criterion) {
                 .collect::<Vec<_>>());
         });
     });
-    let y = x.encode(
+    c.bench_function("tiktoken_rs::cl100k_base", |b| {
+        b.iter(|| {
+            black_box(y.encode_with_special_tokens(
+                &t
+            ));
+        });
+    });
+    let out = x.encode(
         &t,
         &SpecialTokenHandling {
             default: SpecialTokenAction::Special,
@@ -65,8 +65,17 @@ fn cl100k_base_benchmark(c: &mut Criterion) {
         }
     )
     .unwrap();
-    println!("num tokens: {:?}", y.len());
+    println!("num tokens: {:?}", out.len());
+    let est = x.estimate_num_tokens_no_special_tokens_fast(&t, false);
+    println!("estimated num tokens: {:?}", est);
 }
 
-criterion_group!(benches, cl100k_base_benchmark);
+criterion_group!(
+    name = benches;
+    config = Criterion::default()
+        .warm_up_time(std::time::Duration::from_secs(4))
+        .measurement_time(std::time::Duration::from_secs(8))
+        .sample_size(150);
+    targets = cl100k_base_benchmark
+);
 criterion_main!(benches);
