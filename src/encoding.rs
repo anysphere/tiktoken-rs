@@ -14,7 +14,7 @@ pub struct Encoding {
     /// The regular expression pattern used to split text into pieces.
     pat_str: String,
     /// The map from mergeable byte sequences to their ranks.
-    mergeable_ranks: Arc<HashMap<Vec<u8>, usize>>,
+    mergeable_ranks: HashMap<Vec<u8>, usize>,
     /// The maximum length of the keys in `mergeable_ranks`.
     mergeable_ranks_max_key_len: usize,
     /// All prefixes of the mergeable ranks. May or may not be tokens themselves!
@@ -64,7 +64,7 @@ impl Encoding {
     pub fn new(
         name: &str,
         pat_str: &str,
-        mergeable_ranks: Arc<HashMap<Vec<u8>, usize>>,
+        mergeable_ranks: HashMap<Vec<u8>, usize>,
         special_tokens: HashMap<String, usize>,
         explicit_n_vocab: Option<usize>,
     ) -> Result<Self, EncodingError> {
