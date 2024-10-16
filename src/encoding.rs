@@ -28,7 +28,7 @@ pub struct Encoding {
     /// The maximum token value in the encoding.
     max_token_value: usize,
     /// The core BPE logic implemented in Rust.
-    core_bpe: Arc<CoreBPE>,
+    core_bpe: CoreBPE,
 }
 
 // TODO: make a non-generic encoding error here
@@ -124,7 +124,7 @@ impl Encoding {
             prefixes_of_mergeable_ranks,
             special_tokens,
             max_token_value,
-            core_bpe: Arc::new(core_bpe),
+            core_bpe,
         })
     }
 
