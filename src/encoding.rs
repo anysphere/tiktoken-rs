@@ -13,8 +13,6 @@ pub struct Encoding {
     pub name: String,
     /// The regular expression pattern used to split text into pieces.
     pat_str: String,
-    /// The map from mergeable byte sequences to their ranks.
-    mergeable_ranks: HashMap<Vec<u8>, usize>,
     /// The maximum length of the keys in `mergeable_ranks`.
     mergeable_ranks_max_key_len: usize,
     /// All prefixes of the mergeable ranks. May or may not be tokens themselves!
@@ -113,7 +111,6 @@ impl Encoding {
         Ok(Self {
             name: name.to_string(),
             pat_str: pat_str.to_string(),
-            mergeable_ranks,
             mergeable_ranks_max_key_len,
             prefixes_of_mergeable_ranks,
             special_tokens,
@@ -157,7 +154,7 @@ impl Encoding {
                 if current_token.len() > 1 {
                     new_current_token.clear();
                     new_current_token.push(current_token.pop().unwrap());
-                    while !self.mergeable_ranks.contains_key(&current_token) {
+                    while !self.core_bpe.encoder.contains_key(&current_token) {
                         if current_token.len() == 1 {
                             break;
                         }
@@ -177,14 +174,14 @@ impl Encoding {
             }
         }
 
-        while !self.mergeable_ranks.contains_key(&current_token) {
+        while !self.core_bpe.encoder.contains_key(&current_token) {
             if current_token.len() == 0 {
                 break;
             }
             if current_token.len() > 1 {
                 new_current_token.clear();
                 new_current_token.push(current_token.pop().unwrap());
-                while !self.mergeable_ranks.contains_key(&current_token) {
+                while !self.core_bpe.encoder.contains_key(&current_token) {
                     if current_token.len() == 1 {
                         break;
                     }

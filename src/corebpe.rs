@@ -166,7 +166,7 @@ const MAX_NUM_THREADS: usize = 8;
 
 #[derive(Debug)]
 pub struct CoreBPE {
-    encoder: HashMap<Vec<u8>, usize>,
+    pub encoder: HashMap<Vec<u8>, usize>,
     special_tokens_encoder: HashMap<String, usize>,
     decoder: HashMap<usize, Vec<u8>>,
     special_tokens_decoder: HashMap<usize, Vec<u8>>,
