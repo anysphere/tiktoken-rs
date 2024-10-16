@@ -448,9 +448,7 @@ impl CoreBPE {
         let decoder: HashMap<usize, &'static [u8]> = encoder
             .iter()
             .map(|(k, v)| {
-                let bytes: &[u8] = k.as_slice();
-                let static_bytes: &'static [u8] = unsafe { std::mem::transmute(bytes) };
-                (*v, static_bytes)
+                (*v, k.as_slice())
             })
             .collect();
 
@@ -467,9 +465,7 @@ impl CoreBPE {
         let mut sorted_token_bytes: Vec<&'static [u8]> = encoder
             .keys()
             .map(|k| {
-                let bytes: &[u8] = k.as_slice();
-                let static_bytes: &'static [u8] = unsafe { std::mem::transmute(bytes) };
-                static_bytes
+                k.as_slice()
             })
             .collect();
         sorted_token_bytes.sort();
