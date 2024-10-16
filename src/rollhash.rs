@@ -20,7 +20,7 @@ const _: () = assert!(
 const _: () = assert!(is_prime(PRIME as u64), "PRIME must be a prime number");
 const _: () = assert!(is_prime(MODULUS as u64), "MODULUS must be a prime number");
 
-
+#[inline(always)]
 pub fn roll_hash(old: i64, new: u8) -> i64 {
     (((old * PRIME) % MODULUS) + (new as i64)) % MODULUS
 }
@@ -30,6 +30,7 @@ fn roll_hash_back(old: i64, new: u8) -> i64 {
     ((((old + MODULUS) - (new as i64)) % MODULUS) * PRIME_INVERSE) % MODULUS
 }
 
+#[inline(always)]
 pub fn roll_hash_slice(slice: &[u8]) -> i64 {
     let mut hash = 0;
     for &byte in slice {
