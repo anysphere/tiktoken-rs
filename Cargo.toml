@@ -23,8 +23,8 @@ odht = "0.3.1"
 const-primes = "0.8.7"
 
 [dependencies]
-fancy-regex = "0.10.0"
-regex = "1.7.0"
+fancy-regex = "0.13.0"
+regex = "1.10.3"
 rustc-hash = "1.1.0"
 bstr = "1.0.1"
 hex = "0.4.3"
