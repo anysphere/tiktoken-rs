@@ -91,8 +91,10 @@ fn _byte_pair_merge(
 }
 
 pub fn byte_pair_encode(piece: &[u8], ranks: &HashMap<Vec<u8>, Rank>) -> Vec<Rank> {
-    assert!(piece.len() > 1);
-    _byte_pair_merge(&ranks, &piece)
+    if piece.len() == 1 {
+        return vec![ranks[piece]];
+    }
+    _byte_pair_merge(ranks, piece)
         .windows(2)
         .map(|part| ranks[&piece[part[0].0..part[1].0]])
         .collect()
@@ -100,7 +102,7 @@ pub fn byte_pair_encode(piece: &[u8], ranks: &HashMap<Vec<u8>, Rank>) -> Vec<Ran
 
 pub fn byte_pair_split<'a>(piece: &'a [u8], ranks: &HashMap<Vec<u8>, Rank>) -> Vec<&'a [u8]> {
     assert!(piece.len() > 1);
-    _byte_pair_merge(&ranks, &piece)
+    _byte_pair_merge(ranks, piece)
         .windows(2)
         .map(|part| &piece[part[0].0..part[1].0])
         .collect()
