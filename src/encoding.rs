@@ -4,7 +4,11 @@ use rustc_hash::FxHashMap as HashMap;
 use rustc_hash::FxHashSet as HashSet;
 use std::sync::Arc;
 use thiserror::Error;
+use odht::HashTableOwned;
 use crate::rollhash::{roll_hash, roll_hash_slice};
+
+include!("odht.rs");
+include!(concat!(env!("OUT_DIR"), "/static.rs"));
 
 /// A struct that represents an encoding scheme based on byte-pair encoding (BPE).
 #[derive(Debug)]
@@ -16,7 +20,7 @@ pub struct Encoding {
     /// The maximum length of the keys in `mergeable_ranks`.
     mergeable_ranks_max_key_len: usize,
     /// All prefixes of the mergeable ranks. May or may not be tokens themselves!
-    prefixes_of_mergeable_ranks: HashSet<i64>,
+    prefixes_of_mergeable_ranks: HashTableOwned<PrefixConfig>,
     /// The map from special token strings to their values.
     special_tokens: HashMap<String, usize>,
     /// The maximum token value in the encoding.
@@ -97,16 +101,18 @@ impl Encoding {
         )
         .map_err(|e| EncodingError::GenericEncodingError(format!("Error creating core BPE: {}", e)))?;
 
-        let mut prefixes_of_mergeable_ranks = mergeable_ranks
-            .keys()
-            .flat_map(|bytes| {
-                (1..=bytes.len())
-                    .map(|i| roll_hash_slice(&bytes[..i]))
-                    .collect::<Vec<_>>()
+        let prefixes_of_mergeable_ranks = unsafe {
+            HashTableOwned::<PrefixConfig>::from_raw_bytes_unchecked(match name {
+                "r50k_base" => data::R50K_BASE_PREFIXES_ODHT,
+                "p50k_base" => data::P50K_BASE_PREFIXES_ODHT,
+                "cl100k_base" => data::CL100K_BASE_PREFIXES_ODHT,
+                "o200k_base" => data::O200K_BASE_PREFIXES_ODHT,
+                "codestral" => data::CODESTRAL_PREFIXES_ODHT,
+                "llama3" => data::LLAMA3_PREFIXES_ODHT,
+                "deepseekv2" => data::DEEPSEEKV2_PREFIXES_ODHT,
+                _ => return Err(EncodingError::GenericEncodingError(format!("Embedded prefix table not found for encoding: {}", name))),
             })
-            .collect::<HashSet<_>>();
-        prefixes_of_mergeable_ranks.insert(0);
-        prefixes_of_mergeable_ranks.shrink_to_fit();
+        };
 
         Ok(Self {
             name: name.to_string(),
@@ -148,7 +154,7 @@ impl Encoding {
             // or if the current token is not in the prefixes of mergeable ranks,
             // we need to split the current token and begin actually checking for the largest
             // mergeable prefix
-            while !self.prefixes_of_mergeable_ranks.contains(&current_token_hash)
+            while !self.prefixes_of_mergeable_ranks.contains_key(&current_token_hash)
                 || current_token.len() > self.mergeable_ranks_max_key_len
             {
                 if current_token.len() > 1 {
