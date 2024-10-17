@@ -9,7 +9,7 @@ use crate::corebpe::Rank;
 use std::sync::Arc;
 
 include!("odht.rs");
-include!(concat!(env!("OUT_DIR"), "/static.rs"));
+include!(concat!(env!("OUT_DIR"), "/odht_gen.rs"));
 
 /// A struct that represents an encoding scheme based on byte-pair encoding (BPE).
 #[derive(Debug)]

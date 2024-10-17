@@ -12,9 +12,11 @@ use rustc_hash::FxHashSet as HashSet;
 fn main() {
     println!("cargo:rerun-if-changed=build.rs");
     println!("cargo:rerun-if-changed=src/load.rs");
+    println!("cargo:rerun-if-changed=src/rollhash.rs");
+    println!("cargo:rerun-if-changed=src/odht.rs");
 
     let out_dir = env::var("OUT_DIR").unwrap();
-    let mut file = File::create(&Path::new(&out_dir).join("static.rs")).unwrap();
+    let mut file = File::create(&Path::new(&out_dir).join("odht_gen.rs")).unwrap();
     writeln!(file, "pub mod data {{").unwrap();
 
     generate("r50k_base",
