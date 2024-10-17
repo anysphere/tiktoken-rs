@@ -1,7 +1,6 @@
 use fancy_regex::Regex;
 use rustc_hash::FxHashMap as HashMap;
 use rustc_hash::FxHashSet as HashSet;
-use std::sync::Arc;
 use thread_local::ThreadLocal;
 
 pub type Rank = u32;

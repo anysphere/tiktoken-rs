@@ -2,7 +2,6 @@ use crate::corebpe::CoreBPE;
 use regex::Regex;
 use rustc_hash::FxHashMap as HashMap;
 use rustc_hash::FxHashSet as HashSet;
-use std::sync::Arc;
 use thiserror::Error;
 use odht::HashTableOwned;
 use crate::rollhash::{roll_hash, roll_hash_slice};
@@ -27,7 +26,7 @@ pub struct Encoding {
     /// The maximum token value in the encoding.
     max_token_value: Rank,
     /// The core BPE logic implemented in Rust.
-    core_bpe: Arc<CoreBPE>,
+    core_bpe: CoreBPE,
 }
 
 // TODO: make a non-generic encoding error here
@@ -96,7 +95,7 @@ impl Encoding {
             .ok_or_else(|| EncodingError::GenericEncodingError("No mergeable ranks found".to_string()))?;
 
         let core_bpe = CoreBPE::new(
-            mergeable_ranks.clone(),
+            mergeable_ranks,
             special_tokens.clone(),
             pat_str,
         )
@@ -122,7 +121,7 @@ impl Encoding {
             prefixes_of_mergeable_ranks,
             special_tokens,
             max_token_value,
-            core_bpe: Arc::new(core_bpe),
+            core_bpe: core_bpe,
         })
     }
 
