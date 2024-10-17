@@ -96,7 +96,7 @@ fn generate_encoder(
 ) {
     writeln!(
         file,
-        "    pub const {}: &'static [(&'static [u8], usize)] = &[",
+        "    pub const {}: &'static [(&'static [u8], u32)] = &[",
         name.to_uppercase()
     )
     .unwrap();

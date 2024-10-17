@@ -6,7 +6,7 @@ use thread_local::ThreadLocal;
 pub type Rank = u32;
 
 fn _byte_pair_merge(
-    ranks: &HashMap<&'static [u8], usize>,
+    ranks: &HashMap<&'static [u8], Rank>,
     piece: &[u8],
 ) -> Vec<(usize, Rank)> {
     // This is a vector of (start, rank).
@@ -390,7 +390,7 @@ impl CoreBPE {
 
 impl CoreBPE {
     pub fn new(
-        encoder: Arc<HashMap<&'static [u8], Rank>>,
+        encoder: HashMap<&'static [u8], Rank>,
         special_tokens_encoder: HashMap<String, Rank>,
         pattern: &str,
     ) -> Result<Self, fancy_regex::Error> {
@@ -471,7 +471,7 @@ impl CoreBPE {
                     unstable_bytes.extend_from_slice(&bytes[e.valid_up_to()..]);
 
                     tokens.truncate(tokens.len() - last_piece_token_len);
-                    match self.encoder.get(&unstable_bytes) {
+                    match self.encoder.get(&unstable_bytes.as_slice()) {
                         Some(token) => tokens.push(*token),
                         None => tokens.extend(&byte_pair_encode(&unstable_bytes, &self.encoder)),
                     }
@@ -541,10 +541,10 @@ mod tests {
 
     use crate::corebpe::{byte_pair_split, Rank};
 
-    fn setup_ranks() -> HashMap<Vec<u8>, Rank> {
+    fn setup_ranks() -> HashMap<&'static [u8], Rank> {
         HashMap::from_iter([
-            (b"ab".to_vec(), 0),
-            (b"cd".to_vec(), 1),
+            (&b"ab"[..], 0),
+            (&b"cd"[..], 1),
         ])
     }
 

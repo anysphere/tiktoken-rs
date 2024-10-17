@@ -1,7 +1,6 @@
 use crate::encoding::Encoding;
 use rustc_hash::FxHashMap as HashMap;
 use thiserror::Error;
-use std::sync::Arc;
 use crate::corebpe::Rank;
 
 include!(concat!(env!("OUT_DIR"), "/encoders_gen.rs"));
@@ -41,7 +40,7 @@ impl EncodingFactory {
   }
 
   pub fn r50k_base() -> Result<Encoding, EncodingFactoryError> {
-    let mergeable_ranks = data::R50K_BASE.iter().copied().collect::<HashMap<&'static [u8], Rank>>();
+    let mergeable_ranks = HashMap::from_iter(data::R50K_BASE.iter().copied());
     let mut special_tokens: HashMap<String, Rank> =
       [(ENDOFTEXT.to_string(), 50256)].iter().cloned().collect();
     special_tokens.shrink_to_fit();
@@ -56,7 +55,7 @@ impl EncodingFactory {
   }
 
   pub fn p50k_base() -> Result<Encoding, EncodingFactoryError> {
-    let mergeable_ranks = data::P50K_BASE.iter().copied().collect::<HashMap<&'static [u8], Rank>>();
+    let mergeable_ranks = HashMap::from_iter(data::P50K_BASE.iter().copied());
     let mut special_tokens: HashMap<String, Rank> =
       [(ENDOFTEXT.to_string(), 50256)].iter().cloned().collect();
     special_tokens.shrink_to_fit();
@@ -98,7 +97,7 @@ impl EncodingFactory {
   pub fn cl100k_with_special_tokens(
     special_tokens: &[(String, Rank)],
   ) -> Result<Encoding, EncodingFactoryError> {
-    let mergeable_ranks = data::CL100K_BASE.iter().copied().collect::<HashMap<&'static [u8], Rank>>();
+    let mergeable_ranks = HashMap::from_iter(data::CL100K_BASE.iter().copied());
     let mut special_tokens: HashMap<String, Rank> = special_tokens.iter().cloned().collect();
     special_tokens.shrink_to_fit();
     // use faster version from tiktoken upstream https://github.com/openai/tiktoken/pull/258/files#r1487668172
@@ -117,7 +116,7 @@ impl EncodingFactory {
   pub fn o200k_with_special_tokens(
     special_tokens: &[(String, Rank)],
   ) -> Result<Encoding, EncodingFactoryError> {
-    let mergeable_ranks = data::O200K_BASE.iter().copied().collect::<HashMap<&'static [u8], Rank>>();
+    let mergeable_ranks = HashMap::from_iter(data::O200K_BASE.iter().copied());
     let mut special_tokens: HashMap<String, Rank> = special_tokens.iter().cloned().collect();
     special_tokens.shrink_to_fit();
 
@@ -136,7 +135,7 @@ impl EncodingFactory {
   }
 
   pub fn codestral() -> Result<Encoding, EncodingFactoryError> {
-    let mergeable_ranks = data::CODESTRAL.iter().copied().collect::<HashMap<&'static [u8], Rank>>();
+    let mergeable_ranks = HashMap::from_iter(data::CODESTRAL.iter().copied());
     let special_tokens: HashMap<String, Rank> = [].iter().cloned().collect();
 
     Encoding::new("codestral", r"", mergeable_ranks, special_tokens, None)
@@ -144,7 +143,7 @@ impl EncodingFactory {
   }
 
   pub fn deepseekv2() -> Result<Encoding, EncodingFactoryError> {
-    let mergeable_ranks = data::DEEPSEEKV2.iter().copied().collect::<HashMap<&'static [u8], Rank>>();
+    let mergeable_ranks = HashMap::from_iter(data::DEEPSEEKV2.iter().copied());
     let special_tokens: HashMap<String, Rank> = [].iter().cloned().collect();
 
     Encoding::new("deepseekv2", r"", mergeable_ranks, special_tokens, None)
@@ -152,7 +151,7 @@ impl EncodingFactory {
   }
 
   pub fn llama3() -> Result<Encoding, EncodingFactoryError> {
-    let mergeable_ranks = Arc::new(data::LLAMA3.iter().copied().collect::<HashMap<&'static [u8], usize>>());
+    let mergeable_ranks = HashMap::from_iter(data::LLAMA3.iter().copied());
 
     let num_base_tokens = mergeable_ranks.len();
     let mut special_tokens = vec![

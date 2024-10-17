@@ -161,7 +161,7 @@ impl Encoding {
                 if current_token.len() > 1 {
                     new_current_token.clear();
                     new_current_token.push(current_token.pop().unwrap());
-                    while !self.core_bpe.encoder.contains_key(&current_token) {
+                    while !self.core_bpe.encoder.contains_key(&current_token.as_slice()) {
                         if current_token.len() == 1 {
                             break;
                         }
@@ -181,14 +181,14 @@ impl Encoding {
             }
         }
 
-        while !self.core_bpe.encoder.contains_key(&current_token) {
+        while !self.core_bpe.encoder.contains_key(&current_token.as_slice()) {
             if current_token.len() == 0 {
                 break;
             }
             if current_token.len() > 1 {
                 new_current_token.clear();
                 new_current_token.push(current_token.pop().unwrap());
-                while !self.core_bpe.encoder.contains_key(&current_token) {
+                while !self.core_bpe.encoder.contains_key(&current_token.as_slice()) {
                     if current_token.len() == 1 {
                         break;
                     }
