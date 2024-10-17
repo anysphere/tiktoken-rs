@@ -6,6 +6,7 @@ use thiserror::Error;
 use odht::HashTableOwned;
 use crate::rollhash::{roll_hash, roll_hash_slice};
 use crate::corebpe::Rank;
+use std::sync::Arc;
 
 include!("odht.rs");
 include!(concat!(env!("OUT_DIR"), "/static.rs"));
@@ -26,7 +27,7 @@ pub struct Encoding {
     /// The maximum token value in the encoding.
     max_token_value: Rank,
     /// The core BPE logic implemented in Rust.
-    core_bpe: CoreBPE,
+    core_bpe: Arc<CoreBPE>,
 }
 
 // TODO: make a non-generic encoding error here
@@ -121,7 +122,7 @@ impl Encoding {
             prefixes_of_mergeable_ranks,
             special_tokens,
             max_token_value,
-            core_bpe: core_bpe,
+            core_bpe: Arc::new(core_bpe),
         })
     }
 
