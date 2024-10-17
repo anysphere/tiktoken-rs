@@ -2,8 +2,9 @@ use crate::encoding::Encoding;
 use rustc_hash::FxHashMap as HashMap;
 use thiserror::Error;
 use std::sync::Arc;
+use crate::corebpe::Rank;
 
-include!(concat!(env!("OUT_DIR"), "/static.rs"));
+include!(concat!(env!("OUT_DIR"), "/encoders_gen.rs"));
 
 #[derive(Error, Debug, Clone)]
 pub enum EncodingFactoryError {
@@ -26,6 +27,11 @@ const IM_SEP: &str = "<|im_sep|>";
 #[derive(Clone, Debug, Copy)]
 pub struct EncodingFactory {}
 impl EncodingFactory {
+  // The pattern in the original GPT-2 release is:
+  // r"'s|'t|'re|'ve|'m|'ll|'d| ?[\p{L}]+| ?[\p{N}]+| ?[^\s\p{L}\p{N}]+|\s+(?!\S)|\s+"""
+  // This is equivalent, but executes faster:
+  const LEGACY_SPLITTER_REGEX: &str = r"'(?:[sdmt]|ll|ve|re)| ?\p{L}++| ?\p{N}++| ?[^\s\p{L}\p{N}]++|\s++$|\s+(?!\S)|\s";
+
   pub fn gpt2() -> Result<Encoding, EncodingFactoryError> {
     // todo!
     // vocab_bpe_file: sha256 = 1ce1664773c50f3e0cc8842619a93edc4624525b728b188a9e0be33b7726adc5
@@ -35,13 +41,13 @@ impl EncodingFactory {
   }
 
   pub fn r50k_base() -> Result<Encoding, EncodingFactoryError> {
-    let mergeable_ranks = Arc::new(data::R50K_BASE.iter().copied(). collect::<HashMap<&'static [u8], usize>>());
-    let mut special_tokens: HashMap<String, usize> =
+    let mergeable_ranks = data::R50K_BASE.iter().copied().collect::<HashMap<&'static [u8], Rank>>();
+    let mut special_tokens: HashMap<String, Rank> =
       [(ENDOFTEXT.to_string(), 50256)].iter().cloned().collect();
     special_tokens.shrink_to_fit();
     Encoding::new(
       "r50k_base",
-      r"'s|'t|'re|'ve|'m|'ll|'d| ?\p{L}+| ?\p{N}+| ?[^\s\p{L}\p{N}]+|\s+(?!\S)|\s+",
+      EncodingFactory::LEGACY_SPLITTER_REGEX,
       mergeable_ranks,
       special_tokens,
       Some(50257),
@@ -50,13 +56,13 @@ impl EncodingFactory {
   }
 
   pub fn p50k_base() -> Result<Encoding, EncodingFactoryError> {
-    let mergeable_ranks = Arc::new(data::P50K_BASE.iter().copied().collect::<HashMap<&'static [u8], usize>>());
-    let mut special_tokens: HashMap<String, usize> =
+    let mergeable_ranks = data::P50K_BASE.iter().copied().collect::<HashMap<&'static [u8], Rank>>();
+    let mut special_tokens: HashMap<String, Rank> =
       [(ENDOFTEXT.to_string(), 50256)].iter().cloned().collect();
     special_tokens.shrink_to_fit();
     Encoding::new(
       "p50k_base",
-      r"'s|'t|'re|'ve|'m|'ll|'d| ?\p{L}+| ?\p{N}+| ?[^\s\p{L}\p{N}]+|\s+(?!\S)|\s+",
+      EncodingFactory::LEGACY_SPLITTER_REGEX,
       mergeable_ranks,
       special_tokens,
       Some(50281),
@@ -90,14 +96,17 @@ impl EncodingFactory {
   }
 
   pub fn cl100k_with_special_tokens(
-    special_tokens: &[(String, usize)],
+    special_tokens: &[(String, Rank)],
   ) -> Result<Encoding, EncodingFactoryError> {
-    let mergeable_ranks = Arc::new(data::CL100K_BASE.iter().copied().collect::<HashMap<&'static [u8], usize>>());
-    let mut special_tokens: HashMap<String, usize> = special_tokens.iter().cloned().collect();
+    let mergeable_ranks = data::CL100K_BASE.iter().copied().collect::<HashMap<&'static [u8], Rank>>();
+    let mut special_tokens: HashMap<String, Rank> = special_tokens.iter().cloned().collect();
     special_tokens.shrink_to_fit();
+    // use faster version from tiktoken upstream https://github.com/openai/tiktoken/pull/258/files#r1487668172
+    // const PATTERN: &str = r"(?i:'s|'t|'re|'ve|'m|'ll|'d)|[^\r\n\p{L}\p{N}]?\p{L}+|\p{N}{1,3}| ?[^\s\p{L}\p{N}]+[\r\n]*|\s*[\r\n]+|\s+(?!\S)|\s+";
+    const PATTERN: &str = r"'(?i:[sdmt]|ll|ve|re)|[^\r\n\p{L}\p{N}]?+\p{L}++|\p{N}{1,3}+| ?[^\s\p{L}\p{N}]++[\r\n]*+|\s++$|\s*[\r\n]|\s+(?!\S)|\s";
     Encoding::new(
             "cl100k_base",
-            r"(?i:'s|'t|'re|'ve|'m|'ll|'d)|[^\r\n\p{L}\p{N}]?\p{L}+|\p{N}{1,3}| ?[^\s\p{L}\p{N}]+[\r\n]*|\s*[\r\n]+|\s+(?!\S)|\s+",
+            PATTERN,
             mergeable_ranks,
             special_tokens,
             None,
@@ -106,10 +115,10 @@ impl EncodingFactory {
   }
 
   pub fn o200k_with_special_tokens(
-    special_tokens: &[(String, usize)],
+    special_tokens: &[(String, Rank)],
   ) -> Result<Encoding, EncodingFactoryError> {
-    let mergeable_ranks = Arc::new(data::O200K_BASE.iter().copied().collect::<HashMap<&'static [u8], usize>>());
-    let mut special_tokens: HashMap<String, usize> = special_tokens.iter().cloned().collect();
+    let mergeable_ranks = data::O200K_BASE.iter().copied().collect::<HashMap<&'static [u8], Rank>>();
+    let mut special_tokens: HashMap<String, Rank> = special_tokens.iter().cloned().collect();
     special_tokens.shrink_to_fit();
 
     let pat_str: &str = &[
@@ -127,16 +136,16 @@ impl EncodingFactory {
   }
 
   pub fn codestral() -> Result<Encoding, EncodingFactoryError> {
-    let mergeable_ranks = Arc::new(data::CODESTRAL.iter().copied().collect::<HashMap<&'static [u8], usize>>());
-    let special_tokens: HashMap<String, usize> = [].iter().cloned().collect();
+    let mergeable_ranks = data::CODESTRAL.iter().copied().collect::<HashMap<&'static [u8], Rank>>();
+    let special_tokens: HashMap<String, Rank> = [].iter().cloned().collect();
 
     Encoding::new("codestral", r"", mergeable_ranks, special_tokens, None)
       .map_err(|e| EncodingFactoryError::UnableToCreateEncoding(e.to_string()))
   }
 
   pub fn deepseekv2() -> Result<Encoding, EncodingFactoryError> {
-    let mergeable_ranks = Arc::new(data::DEEPSEEKV2.iter().copied().collect::<HashMap<&'static [u8], usize>>());
-    let special_tokens: HashMap<String, usize> = [].iter().cloned().collect();
+    let mergeable_ranks = data::DEEPSEEKV2.iter().copied().collect::<HashMap<&'static [u8], Rank>>();
+    let special_tokens: HashMap<String, Rank> = [].iter().cloned().collect();
 
     Encoding::new("deepseekv2", r"", mergeable_ranks, special_tokens, None)
       .map_err(|e| EncodingFactoryError::UnableToCreateEncoding(e.to_string()))
@@ -161,11 +170,11 @@ impl EncodingFactory {
 
     let num_reserved_special_tokens = 256;
     special_tokens.extend(
-      (5..num_reserved_special_tokens - 5).map(|i| format!("<|reserved_special_token_{}|>", i)),
+      (5..num_reserved_special_tokens - 5).map(|i| format!("<|reserved_special_token_{}|>", i as Rank)),
     );
 
-    let mut special_tokens_map: HashMap<String, usize> =
-      special_tokens.into_iter().enumerate().map(|(i, token)| (token, num_base_tokens + i)).collect();
+    let mut special_tokens_map: HashMap<String, Rank> =
+      special_tokens.into_iter().enumerate().map(|(i, token)| (token, (num_base_tokens + i) as Rank)).collect();
     special_tokens_map.shrink_to_fit();
 
     let pat_str = r"(?i:'s|'t|'re|'ve|'m|'ll|'d)|[^\r\n\p{L}\p{N}]?\p{L}+|\p{N}{1,3}| ?[^\s\p{L}\p{N}]+[\r\n]*|\s*[\r\n]+|\s+(?!\S)|\s+";
