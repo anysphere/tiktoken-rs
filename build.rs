@@ -72,7 +72,7 @@ fn main() {
 fn generate(
     name: &str,
     file: &mut File,
-    mergeable_ranks: &HashMap<Vec<u8>, usize>,
+    mergeable_ranks: &HashMap<Vec<u8>, Rank>,
 ) {
     writeln!(
         file,

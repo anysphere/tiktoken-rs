@@ -6,6 +6,7 @@ use std::sync::Arc;
 use thiserror::Error;
 use odht::HashTableOwned;
 use crate::rollhash::{roll_hash, roll_hash_slice};
+use crate::corebpe::Rank;
 
 include!("odht.rs");
 include!(concat!(env!("OUT_DIR"), "/static.rs"));
@@ -22,9 +23,9 @@ pub struct Encoding {
     /// All prefixes of the mergeable ranks. May or may not be tokens themselves!
     prefixes_of_mergeable_ranks: HashTableOwned<PrefixConfig>,
     /// The map from special token strings to their values.
-    special_tokens: HashMap<String, usize>,
+    special_tokens: HashMap<String, Rank>,
     /// The maximum token value in the encoding.
-    max_token_value: usize,
+    max_token_value: Rank,
     /// The core BPE logic implemented in Rust.
     core_bpe: Arc<CoreBPE>,
 }
@@ -66,8 +67,8 @@ impl Encoding {
     pub fn new(
         name: &str,
         pat_str: &str,
-        mergeable_ranks: HashMap<Vec<u8>, usize>,
-        special_tokens: HashMap<String, usize>,
+        mergeable_ranks: HashMap<Vec<u8>, Rank>,
+        special_tokens: HashMap<String, Rank>,
         explicit_n_vocab: Option<usize>,
     ) -> Result<Self, EncodingError> {
         let max_token_value = match mergeable_ranks
@@ -83,7 +84,7 @@ impl Encoding {
             if mergeable_ranks.len() + special_tokens.len() != explicit_n_vocab {
                 return Err(EncodingError::GenericEncodingError("Mismatch between explicit vocab size and actual vocab size".to_string()));
             }
-            if max_token_value != explicit_n_vocab - 1 {
+            if max_token_value as usize != explicit_n_vocab - 1 {
                 return Err(EncodingError::GenericEncodingError("Mismatch between max token value and explicit vocab size".to_string()));
             }
         }
@@ -126,7 +127,7 @@ impl Encoding {
     }
 
     /// Encodes a string into tokens, ignoring special tokens.
-    pub fn encode_ordinary(&self, text: &str) -> Vec<usize> {
+    pub fn encode_ordinary(&self, text: &str) -> Vec<Rank> {
         self.core_bpe.encode_ordinary(text)
     }
 
@@ -221,7 +222,7 @@ impl Encoding {
         &self,
         text: &str,
         special_token_handling: &SpecialTokenHandling,
-    ) -> Result<Vec<usize>, EncodingError> {
+    ) -> Result<Vec<Rank>, EncodingError> {
         // first check if all special tokens are valid
         for (special_token, _) in &special_token_handling.overrides {
             if !self.special_tokens.contains_key(special_token) {
@@ -326,7 +327,7 @@ impl Encoding {
         &self,
         text: &str,
         special_token_handling: &SpecialTokenHandling,
-    ) -> Result<(Vec<usize>, HashSet<Vec<usize>>), EncodingError> {
+    ) -> Result<(Vec<Rank>, HashSet<Vec<Rank>>), EncodingError> {
         // first check if all special tokens are valid
         for (special_token, _) in &special_token_handling.overrides {
             if !self.special_tokens.contains_key(special_token) {
@@ -407,15 +408,15 @@ impl Encoding {
     /// NOTE: this will encode all special tokens.
     ///
     /// Returns an error if the token is not in the vocabulary.
-    pub fn encode_single_token(&self, text: &str) -> Result<usize, Vec<u8>> {
+    pub fn encode_single_token(&self, text: &str) -> Result<Rank, Vec<u8>> {
         self.encode_single_token_bytes(text.as_bytes())
     }
-    pub fn encode_single_token_bytes(&self, bytes: &[u8]) -> Result<usize, Vec<u8>> {
+    pub fn encode_single_token_bytes(&self, bytes: &[u8]) -> Result<Rank, Vec<u8>> {
         self.core_bpe.encode_single_token(bytes)
     }
 
     /// Decodes a list of tokens into bytes.
-    pub fn decode_bytes(&self, tokens: &[usize]) -> Vec<u8> {
+    pub fn decode_bytes(&self, tokens: &[Rank]) -> Vec<u8> {
         self.core_bpe.decode_bytes(tokens)
     }
 
@@ -423,7 +424,7 @@ impl Encoding {
     ///
     /// WARNING: the default behaviour of this function is lossy, since decoded bytes are not
     /// guaranteed to be valid UTF-8.
-    pub fn decode(&self, tokens: &[usize]) -> String {
+    pub fn decode(&self, tokens: &[Rank]) -> String {
         let bytes = self.core_bpe.decode_bytes(tokens);
         String::from_utf8_lossy(&bytes).to_string()
     }
@@ -433,7 +434,7 @@ impl Encoding {
     /// NOTE: this will decode all special tokens.
     ///
     /// Returns an error if the token is not in the vocabulary.
-    pub fn decode_single_token_bytes(&self, token: usize) -> Result<Vec<u8>, usize> {
+    pub fn decode_single_token_bytes(&self, token: Rank) -> Result<Vec<u8>, Rank> {
         self.core_bpe.decode_single_token_bytes(token)
     }
 
@@ -442,7 +443,7 @@ impl Encoding {
     /// Useful for visualising tokenisation.
     ///
     /// Returns an error if any of the tokens is not in the vocabulary.
-    pub fn decode_tokens_bytes(&self, tokens: Vec<usize>) -> Result<Vec<Vec<u8>>, usize> {
+    pub fn decode_tokens_bytes(&self, tokens: Vec<Rank>) -> Result<Vec<Vec<u8>>, Rank> {
         tokens
             .into_iter()
             .map(|token| self.decode_single_token_bytes(token))
@@ -455,20 +456,20 @@ impl Encoding {
     }
 
     /// Returns the end-of-text token.
-    pub fn eot_token(&self) -> usize {
+    pub fn eot_token(&self) -> Rank {
         self.special_tokens["<|endoftext|>"]
     }
 
     /// Encodes text corresponding to bytes without a regex split.
     ///
     /// NOTE: this will not encode any special tokens.
-    fn _encode_single_piece(&self, text: &str) -> Vec<usize> {
+    fn _encode_single_piece(&self, text: &str) -> Vec<Rank> {
         let text_or_bytes = text.as_bytes();
         self.core_bpe.encode_single_piece(text_or_bytes)
     }
 
     /// Encodes a string into tokens, but do regex splitting in Rust.
-    fn _encode_only_native_bpe(&self, text: &str) -> Vec<usize> {
+    fn _encode_only_native_bpe(&self, text: &str) -> Vec<Rank> {
         let re = Regex::new(&self.pat_str).unwrap();
         let mut ret = Vec::new();
         for piece in re.find_iter(text) {
@@ -478,7 +479,7 @@ impl Encoding {
     }
 
     /// Encodes bytes into tokens.
-    fn _encode_bytes(&self, text: &[u8]) -> Vec<usize> {
+    fn _encode_bytes(&self, text: &[u8]) -> Vec<Rank> {
         self.core_bpe._encode_bytes(text)
     }
 }

@@ -2,6 +2,7 @@ use crate::encoding::Encoding;
 use rustc_hash::FxHashMap as HashMap;
 use thiserror::Error;
 
+use crate::corebpe::Rank;
 use crate::load::load_tiktoken_bpe;
 
 #[derive(Error, Debug, Clone)]
@@ -39,7 +40,7 @@ impl EncodingFactory {
       "306cd27f03c1a714eca7108e03d66b7dc042abe8c258b44c199a7ed9838dd930",
     )
     .map_err(|_| EncodingFactoryError::FailedToLoadEncoding)?;
-    let mut special_tokens: HashMap<String, usize> =
+    let mut special_tokens: HashMap<String, Rank> =
       [(ENDOFTEXT.to_string(), 50256)].iter().cloned().collect();
     special_tokens.shrink_to_fit();
     Encoding::new(
@@ -58,7 +59,7 @@ impl EncodingFactory {
       "94b5ca7dff4d00767bc256fdd1b27e5b17361d7b8a5f968547f9f23eb70d2069",
     )
     .map_err(|_| EncodingFactoryError::FailedToLoadEncoding)?;
-    let mut special_tokens: HashMap<String, usize> =
+    let mut special_tokens: HashMap<String, Rank> =
       [(ENDOFTEXT.to_string(), 50256)].iter().cloned().collect();
     special_tokens.shrink_to_fit();
     Encoding::new(
@@ -97,14 +98,14 @@ impl EncodingFactory {
   }
 
   pub fn cl100k_with_special_tokens(
-    special_tokens: &[(String, usize)],
+    special_tokens: &[(String, Rank)],
   ) -> Result<Encoding, EncodingFactoryError> {
     let mergeable_ranks = load_tiktoken_bpe(
       include_bytes!("../data/cl100k_base.tiktoken"),
       "223921b76ee99bde995b7ff738513eef100fb51d18c93597a113bcffe865b2a7",
     )
     .map_err(|_| EncodingFactoryError::FailedToLoadEncoding)?;
-    let mut special_tokens: HashMap<String, usize> = special_tokens.iter().cloned().collect();
+    let mut special_tokens: HashMap<String, Rank> = special_tokens.iter().cloned().collect();
     special_tokens.shrink_to_fit();
     Encoding::new(
             "cl100k_base",
@@ -117,14 +118,14 @@ impl EncodingFactory {
   }
 
   pub fn o200k_with_special_tokens(
-    special_tokens: &[(String, usize)],
+    special_tokens: &[(String, Rank)],
   ) -> Result<Encoding, EncodingFactoryError> {
     let mergeable_ranks = load_tiktoken_bpe(
       include_bytes!("../data/o200k_base.tiktoken"),
       "446a9538cb6c348e3516120d7c08b09f57c36495e2acfffe59a5bf8b0cfb1a2d",
     )
     .map_err(|_| EncodingFactoryError::FailedToLoadEncoding)?;
-    let mut special_tokens: HashMap<String, usize> = special_tokens.iter().cloned().collect();
+    let mut special_tokens: HashMap<String, Rank> = special_tokens.iter().cloned().collect();
     special_tokens.shrink_to_fit();
 
     let pat_str: &str = &[
@@ -147,7 +148,7 @@ impl EncodingFactory {
       "bd5e66af07259851e88c3e483f88371dc2408cb0ce8b9787d29eaecdbb78eade",
     )
     .map_err(|_| EncodingFactoryError::FailedToLoadEncoding)?;
-    let special_tokens: HashMap<String, usize> = [].iter().cloned().collect();
+    let special_tokens: HashMap<String, Rank> = [].iter().cloned().collect();
 
     Encoding::new("codestral", r"", mergeable_ranks, special_tokens, None)
       .map_err(|e| EncodingFactoryError::UnableToCreateEncoding(e.to_string()))
@@ -159,7 +160,7 @@ impl EncodingFactory {
       "3516b4e6e24389f7d1b288d861ce063da13296f916d29384e56ea9e0f6ba6674",
     )
     .map_err(|_| EncodingFactoryError::FailedToLoadEncoding)?;
-    let special_tokens: HashMap<String, usize> = [].iter().cloned().collect();
+    let special_tokens: HashMap<String, Rank> = [].iter().cloned().collect();
 
     Encoding::new("deepseekv2", r"", mergeable_ranks, special_tokens, None)
       .map_err(|e| EncodingFactoryError::UnableToCreateEncoding(e.to_string()))
@@ -188,11 +189,11 @@ impl EncodingFactory {
 
     let num_reserved_special_tokens = 256;
     special_tokens.extend(
-      (5..num_reserved_special_tokens - 5).map(|i| format!("<|reserved_special_token_{}|>", i)),
+      (5..num_reserved_special_tokens - 5).map(|i| format!("<|reserved_special_token_{}|>", i as Rank)),
     );
 
-    let mut special_tokens_map: HashMap<String, usize> =
-      special_tokens.into_iter().enumerate().map(|(i, token)| (token, num_base_tokens + i)).collect();
+    let mut special_tokens_map: HashMap<String, Rank> =
+      special_tokens.into_iter().enumerate().map(|(i, token)| (token, (num_base_tokens + i) as Rank)).collect();
     special_tokens_map.shrink_to_fit();
 
     let pat_str = r"(?i:'s|'t|'re|'ve|'m|'ll|'d)|[^\r\n\p{L}\p{N}]?\p{L}+|\p{N}{1,3}| ?[^\s\p{L}\p{N}]+[\r\n]*|\s*[\r\n]+|\s+(?!\S)|\s+";
