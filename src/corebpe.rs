@@ -166,7 +166,7 @@ const MAX_NUM_THREADS: usize = 8;
 
 #[derive(Debug)]
 pub struct CoreBPE {
-    encoder: Arc<HashMap<Vec<u8>, usize>>,
+    pub encoder: HashMap<Vec<u8>, usize>,
     special_tokens_encoder: HashMap<String, usize>,
     decoder: HashMap<usize, Vec<u8>>,
     special_tokens_decoder: HashMap<usize, Vec<u8>>,
@@ -429,7 +429,7 @@ impl CoreBPE {
 
 impl CoreBPE {
     pub fn new(
-        encoder: Arc<HashMap<Vec<u8>, usize>>,
+        encoder: HashMap<Vec<u8>, usize>,
         special_tokens_encoder: HashMap<String, usize>,
         pattern: &str,
     ) -> Result<Self, fancy_regex::Error> {
