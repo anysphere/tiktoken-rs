@@ -112,9 +112,16 @@ impl EncodingFactory {
     .map_err(|_| EncodingFactoryError::FailedToLoadEncoding)?;
     let mut special_tokens: HashMap<String, Rank> = special_tokens.iter().cloned().collect();
     special_tokens.shrink_to_fit();
-    // use faster version from tiktoken upstream https://github.com/openai/tiktoken/pull/258/files#r1487668172
+
+    // original upstream pattern
     // const PATTERN: &str = r"(?i:'s|'t|'re|'ve|'m|'ll|'d)|[^\r\n\p{L}\p{N}]?\p{L}+|\p{N}{1,3}| ?[^\s\p{L}\p{N}]+[\r\n]*|\s*[\r\n]+|\s+(?!\S)|\s+";
-    const PATTERN: &str = r"'(?i:[sdmt]|ll|ve|re)|[^\r\n\p{L}\p{N}]?+\p{L}++|\p{N}{1,3}+| ?[^\s\p{L}\p{N}]++[\r\n]*+|\s++$|\s*[\r\n]|\s+(?!\S)|\s";
+
+    // faster version from tiktoken upstream https://github.com/openai/tiktoken/pull/258/files#r1487668172
+    // const PATTERN: &str = r"'(?i:[sdmt]|ll|ve|re)|[^\r\n\p{L}\p{N}]?+\p{L}++|\p{N}{1,3}+| ?[^\s\p{L}\p{N}]++[\r\n]*+|\s++$|\s*[\r\n]|\s+(?!\S)|\s";
+
+    // faster version replacing \s+(?!\S) with equivalent \s+$
+    const PATTERN: &str = r"'(?i:[sdmt]|ll|ve|re)|[^\r\n\p{L}\p{N}]?+\p{L}++|\p{N}{1,3}+| ?[^\s\p{L}\p{N}]++[\r\n]*+|\s++$|\s*[\r\n]|\s+$|\s";
+
     Encoding::new(
             "cl100k_base",
             PATTERN,
