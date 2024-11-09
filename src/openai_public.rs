@@ -149,7 +149,7 @@ impl EncodingFactory {
         r"\p{N}{1,3}",
         r" ?[^\s\p{L}\p{N}]+[\r\n/]*",
         r"\s*[\r\n]+",
-        r"\s+(?!\S)",
+        r"\s+$",
         r"\s+",
     ].join("|");
 
