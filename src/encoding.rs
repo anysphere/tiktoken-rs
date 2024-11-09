@@ -16,8 +16,6 @@ include!(concat!(env!("OUT_DIR"), "/odht_gen.rs"));
 pub struct Encoding {
     /// The name of the encoding.
     pub name: String,
-    /// The regular expression pattern used to split text into pieces.
-    pat_str: String,
     /// The maximum length of the keys in `mergeable_ranks`.
     mergeable_ranks_max_key_len: usize,
     /// All prefixes of the mergeable ranks. May or may not be tokens themselves!
@@ -117,7 +115,6 @@ impl Encoding {
 
         Ok(Self {
             name: name.to_string(),
-            pat_str: pat_str.to_string(),
             mergeable_ranks_max_key_len,
             prefixes_of_mergeable_ranks,
             special_tokens,
@@ -466,16 +463,6 @@ impl Encoding {
     fn _encode_single_piece(&self, text: &str) -> Vec<Rank> {
         let text_or_bytes = text.as_bytes();
         self.core_bpe.encode_single_piece(text_or_bytes)
-    }
-
-    /// Encodes a string into tokens, but do regex splitting in Rust.
-    fn _encode_only_native_bpe(&self, text: &str) -> Vec<Rank> {
-        let re = Regex::new(&self.pat_str).unwrap();
-        let mut ret = Vec::new();
-        for piece in re.find_iter(text) {
-            ret.extend(self.core_bpe.encode_single_piece(piece.as_str().as_bytes()));
-        }
-        ret
     }
 
     /// Encodes bytes into tokens.
