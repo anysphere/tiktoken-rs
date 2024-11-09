@@ -22,8 +22,6 @@ pub struct Encoding {
     prefixes_of_mergeable_ranks: HashTableOwned<PrefixConfig>,
     /// The map from special token strings to their values.
     special_tokens: HashMap<String, Rank>,
-    /// The maximum token value in the encoding.
-    max_token_value: Rank,
     /// The core BPE logic implemented in Rust.
     core_bpe: Arc<CoreBPE>,
 }
@@ -118,7 +116,6 @@ impl Encoding {
             mergeable_ranks_max_key_len,
             prefixes_of_mergeable_ranks,
             special_tokens,
-            max_token_value,
             core_bpe: Arc::new(core_bpe),
         })
     }
@@ -294,7 +291,7 @@ impl Encoding {
     }
 
     /// Encodes a list of strings into tokens, in parallel, ignoring special tokens.
-    pub fn encode_ordinary_batch(&self, text: Vec<String>) -> Vec<Vec<usize>> {
+    pub fn encode_ordinary_batch(&self, _text: Vec<String>) -> Vec<Vec<usize>> {
         // encoder = functools.partial(self.encode_ordinary)
         // with ThreadPoolExecutor(num_threads) as e:
         //     return list(e.map(encoder, text))
@@ -305,8 +302,8 @@ impl Encoding {
     /// Encodes a list of strings into tokens, in parallel.
     pub fn encode_batch(
         &self,
-        text: Vec<String>,
-        special_token_handling: &SpecialTokenHandling,
+        _text: Vec<String>,
+        _special_token_handling: &SpecialTokenHandling,
     ) -> Vec<Vec<usize>> {
         // with ThreadPoolExecutor(num_threads) as e:
         //     return list(e.map(encoder, text))
@@ -460,7 +457,7 @@ impl Encoding {
     /// Encodes text corresponding to bytes without a regex split.
     ///
     /// NOTE: this will not encode any special tokens.
-    fn _encode_single_piece(&self, text: &str) -> Vec<Rank> {
+    pub fn _encode_single_piece(&self, text: &str) -> Vec<Rank> {
         let text_or_bytes = text.as_bytes();
         self.core_bpe.encode_single_piece(text_or_bytes)
     }

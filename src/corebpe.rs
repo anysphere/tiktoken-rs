@@ -78,6 +78,7 @@ pub fn byte_pair_encode(piece: &[u8], ranks: &HashMap<Vec<u8>, Rank>) -> Vec<Ran
         .collect()
 }
 
+#[cfg(test)]
 pub fn byte_pair_split<'a>(piece: &'a [u8], ranks: &HashMap<Vec<u8>, Rank>) -> Vec<&'a [u8]> {
     assert!(piece.len() > 1);
     _byte_pair_merge(ranks, piece)
@@ -230,7 +231,7 @@ impl CoreBPE {
 
         if !piece.is_empty() {
             last_piece_token_len = match self.encoder.get(piece) {
-                Some(token) => 1,
+                Some(_token) => 1,
                 None => byte_pair_encode(piece, &self.encoder).len(),
             };
         };
